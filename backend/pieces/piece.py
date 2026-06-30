@@ -9,6 +9,8 @@ class Piece(ABC):
     opponent_color: str = field(init=False)
     maxRows: int = 11        
     maxCols: int = 11
+    heuristic: int
+    biological: bool = True
     
     def __post_init__(self):
         if(self.player_color == "W"):
