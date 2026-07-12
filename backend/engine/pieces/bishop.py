@@ -1,6 +1,8 @@
-from piece import Piece
-from models import Move
+# Global Imports
 from typing import List
+# Local Imports
+from backend.engine.pieces.piece import Piece
+from backend.engine.models import Move
 
 class Bishop(Piece):
     def getAllLegalMoves(self):

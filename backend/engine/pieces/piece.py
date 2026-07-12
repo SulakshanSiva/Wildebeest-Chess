@@ -1,3 +1,4 @@
+# Global Imports
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
@@ -56,4 +57,3 @@ class Piece(ABC):
     # Function to get a direction for a piece
     def getDirection(self):
         return 1 if self.player_color == "W" else -1
-
