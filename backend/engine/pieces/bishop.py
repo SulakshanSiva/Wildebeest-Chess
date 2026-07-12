@@ -2,7 +2,7 @@
 from typing import List
 # Local Imports
 from backend.engine.pieces.piece import Piece
-from backend.engine.models import Move
+from backend.engine.models.model import Move
 
 class Bishop(Piece):
     def getAllLegalMoves(self):
