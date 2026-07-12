@@ -1,8 +1,6 @@
 # Global Imports
 from pydantic import BaseModel, Field
 from datetime import timedelta
-from enum import Enum
-from pieces.pawn import Pawn
 
 starting_board = """
 RNZBOKXBCNR
