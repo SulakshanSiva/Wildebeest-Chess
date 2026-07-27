@@ -21,6 +21,7 @@ class Move(BaseModel):
     src_y: int
     dest_x: int
     dest_y: int
+    isFlung: bool = False
     
 class Board(BaseModel):
     board_state: list[list[str]] = Field(default_factory=list)

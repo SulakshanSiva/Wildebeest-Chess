@@ -6,6 +6,7 @@ from engine.models.model import Board
 from engine.board import initialize_board
 
 app = FastAPI()
+games: dict[str, Board] = {}
 
 @app.get("/")
 async def root():
@@ -13,14 +14,16 @@ async def root():
 
 @app.post("/game")
 async def start_game():
+    # Create board
     board = Board()
     initialize_board(board)
+    
+    # Create game id
     game_id = uuid4()
+    games[game_id] = board
+    
     return {
         "game_id": game_id,
         "board": board
     }
-  
-@app.post("/game/{game_id}/move")
-async def move():
-    return
+        
