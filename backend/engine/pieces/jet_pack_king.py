@@ -1,8 +1,8 @@
 # Global Imports
 from typing import List
 # Local Imports
-from backend.engine.pieces.piece import Piece
-from backend.engine.models.model import Move
+from .piece import Piece
+from ..models.model import Move
 
 class JetPackKing(Piece):
     def getAllLegalMoves(self):
