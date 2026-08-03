@@ -2,21 +2,16 @@
 from fastapi import FastAPI
 from uuid import uuid4
 # Local Imports
-from engine.models.model import Board
-from engine.board import initialize_board
+from engine.board import Board
 
 app = FastAPI()
 games: dict[str, Board] = {}
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
 
 @app.post("/game")
 async def start_game():
     # Create board
     board = Board()
-    initialize_board(board)
+    board.initialize_board()
     
     # Create game id
     game_id = uuid4()
@@ -26,4 +21,4 @@ async def start_game():
         "game_id": game_id,
         "board": board
     }
-        
+    
