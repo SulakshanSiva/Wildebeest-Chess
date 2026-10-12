@@ -1,6 +1,5 @@
 # Global Imports
 from dataclasses import dataclass, field
-from datetime import timedelta
 
 # Local Imports
 from .models.model import starting_board

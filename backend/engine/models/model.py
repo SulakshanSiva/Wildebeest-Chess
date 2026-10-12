@@ -1,6 +1,5 @@
 # Global Imports
-from pydantic import BaseModel, Field
-from datetime import timedelta
+from pydantic import BaseModel
 
 starting_board = """
 RNZBOKXBCNR

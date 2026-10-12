@@ -21,4 +21,9 @@ async def start_game():
         "game_id": game_id,
         "board": board
     }
+
+@app.post("/{game_id}/move")
+async def move(game_id):
+    board = games[game_id]
+    
     
