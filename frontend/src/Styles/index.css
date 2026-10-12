@@ -1,13 +1,84 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&display=swap');
+
+*{
+  box-sizing: border-box;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+.menu {
+  isolation: isolate;
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+
+.menu__board,
+.menu__overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.menu__board {
+  z-index: -2;
+  background-color: #c5a86a;
+  background-image: repeating-conic-gradient(
+    #e1c889 0 25%,
+    #76573a 0 50%
+  );
+  background-position: center;
+  background-size: clamp(4rem, 12vw, 9rem) clamp(4rem, 12vw, 9rem);
+  filter: saturate(0.82);
+  transform: scale(1.04) rotate(-3deg);
+}
+
+.menu__overlay {
+  z-index: -1;
+  background:
+    radial-gradient(circle at center, rgba(16, 39, 29, 0.22), rgba(7, 20, 14, 0.76)),
+    linear-gradient(135deg, rgba(12, 37, 25, 0.5), rgba(87, 49, 24, 0.3));
+}
+
+.menu__content {
+  animation: title-fade-in 700ms ease-out both;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.32);
+}
+
+.menu__play-button {
+  box-shadow: 0 8px 20px rgba(31, 18, 8, 0.28);
+}
+
+.menu__credits {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+@keyframes title-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__content {
+    animation: none;
+  }
 }
