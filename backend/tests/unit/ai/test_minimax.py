@@ -141,9 +141,11 @@ def test_the_same_position_always_gives_the_same_move() -> None:
     Choose deterministically, so a game and a test can be reproduced.
     """
     game = Game.start("repeat", Variant())
-    player = MinimaxPlayer()
 
-    assert player.choose_move(game) == player.choose_move(game)
+    first = MinimaxPlayer().choose_move(game)
+    second = MinimaxPlayer().choose_move(game)
+
+    assert first == second
 
 
 def test_choosing_a_move_leaves_the_game_untouched() -> None:
