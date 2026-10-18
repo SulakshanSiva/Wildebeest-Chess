@@ -64,8 +64,8 @@ def resolve_turn(position: Position, move: Move, links: TransporterLinks) -> Tur
 
     next_moves = legal_moves(report.board, after.side_to_move)
     if not next_moves:
-        # The rules never address a side with nothing to play; see the
-        # architecture document. Treated as a draw so a game cannot hang.
+        # The rules never address a side with nothing to play. Treated as a
+        # draw so a game cannot hang.
         return TurnResult(after, GameStatus.DRAW, EndReason.NO_LEGAL_MOVES, report, ())
 
     return TurnResult(after, GameStatus.ACTIVE, None, report, next_moves)

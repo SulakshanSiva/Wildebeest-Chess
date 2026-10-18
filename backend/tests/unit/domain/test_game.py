@@ -279,8 +279,8 @@ def test_a_side_with_no_legal_moves_ends_the_game_as_a_draw() -> None:
     """
     Draw rather than hang when the side to move has nothing it may do.
 
-    The rules never address this, so it is an assumption recorded in the
-    architecture document. Black's only piece is a King held by a BeeKeeper.
+    The rules never address this, so a draw is an assumption made so a game
+    cannot hang. Black's only piece is a King held by a BeeKeeper.
     """
     game = _custom_game(
         [

@@ -1,0 +1,19 @@
+# Python environments and build output
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/build/
+
+# macOS
+.DS_Store

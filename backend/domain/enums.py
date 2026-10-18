@@ -189,7 +189,7 @@ class EndReason(Enum):
     KING_CAPTURED covers every way a King can fall, including poison, a Golf
     Cart rampage, an explosion and a crush, and a simultaneous loss of both
     Kings, which is a draw. NO_LEGAL_MOVES is the one ending the rules never
-    mention; see the architecture document for how it is treated.
+    mention. It is treated as a draw so a game cannot hang.
     """
 
     KING_CAPTURED = auto()

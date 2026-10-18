@@ -49,11 +49,15 @@ Four checks must pass before anything merges. CI runs them in this order, cheape
 first, in `.github/workflows/backend.yml`. Run them locally with:
 
 ```
-python3 -m ruff format --check . && python3 -m ruff check . && python3 -m mypy && python3 -m pytest
+uv run ruff format --check . && uv run ruff check . && uv run mypy && uv run pytest
 ```
 
-Install the tooling with `python3 -m pip install -e ".[dev]"`. Configuration lives in
-`pyproject.toml`, not in separate config files.
+Install the locked dependencies with `uv sync --extra dev`, and run the same checks through
+`uv run`. `uv.lock` pins every version, so a fresh checkout installs exactly what CI installs.
+Configuration lives in `pyproject.toml`, not in separate config files.
+
+SonarCloud runs in CI after the four checks, using `sonar-project.properties` and the
+`SONAR_TOKEN` repository secret. Its results are the reference for the Sonar requirement below.
 
 The lint step enforces the architecture, not just style: `backend/domain/` is banned
 from importing `fastapi`, `pydantic`, `sqlalchemy`, or `redis`, so a dependency-direction
@@ -70,3 +74,7 @@ violation fails CI instead of relying on a reviewer to notice it.
 ### Sonar
 
 - All sonar issues should be addressed
+
+### Git
+
+- NEVER git commit or push work at your own discretion
