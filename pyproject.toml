@@ -1,0 +1,69 @@
+[project]
+name = "wildebeest-chess-backend"
+version = "0.1.0"
+description = "Authoritative rules engine and AI for an 11x11 chess variant."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "pydantic>=2.13.4",
+    "uvicorn>=0.30.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.pytest.ini_options]
+# rootdir-relative, so backend.* resolves without relying on implicit sys.path
+# insertion. importmode=importlib avoids the __init__.py chain mattering.
+testpaths = ["backend/tests"]
+pythonpath = ["."]
+addopts = "-q --import-mode=importlib"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Documentation quotes partial code on purpose; the formatter must not rewrite it.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes: unused imports and names
+    "I",    # isort: import ordering
+    "B",    # bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify, including nested-ternary and nested-if
+    "PLR",  # pylint refactor, including too-many-branches
+    "RET",  # flake8-return
+    "ARG",  # unused arguments
+    "TID251",  # banned imports only; relative imports inside the package are fine
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# Enforces section 4: the domain must not import a web framework or a database
+# driver. Checked by lint so a violation fails CI rather than review.
+"fastapi".msg = "Transport belongs in backend/api. The domain must stay framework-free."
+"pydantic".msg = "Pydantic belongs at the HTTP boundary. The domain uses dataclasses."
+"sqlalchemy".msg = "This project has no database by design. See CLAUDE.md."
+"redis".msg = "This project has no external datastore by design. See CLAUDE.md."
+
+[tool.ruff.lint.per-file-ignores]
+# The API layer is where Pydantic and FastAPI belong; the ban exists to keep
+# them out of backend/domain, not out of the transport layer.
+"backend/api/*" = ["TID251"]
+"backend/main.py" = ["TID251"]
+# API tests exercise the transport layer, so they need FastAPI's test client.
+"backend/tests/api/*" = ["TID251"]
+# Parametrised tests legitimately take many arguments, and comparing against
+# literal expected values is the point of a test.
+"backend/tests/*" = ["PLR2004", "PLR0913", "PLR0917"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["backend"]

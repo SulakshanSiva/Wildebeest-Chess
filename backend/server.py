@@ -1,29 +1,5 @@
-# Global Imports
-from fastapi import FastAPI
-from uuid import uuid4
-# Local Imports
-from engine.board import Board
+from __future__ import annotations
 
-app = FastAPI()
-games: dict[str, Board] = {}
+from .main import app
 
-@app.post("/game")
-async def start_game():
-    # Create board
-    board = Board()
-    board.initialize_board()
-    
-    # Create game id
-    game_id = uuid4()
-    games[game_id] = board
-    
-    return {
-        "game_id": game_id,
-        "board": board
-    }
-
-@app.post("/{game_id}/move")
-async def move(game_id):
-    board = games[game_id]
-    
-    
+__all__ = ["app"]
