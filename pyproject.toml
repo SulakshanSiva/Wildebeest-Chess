@@ -1,7 +1,7 @@
 [project]
 name = "wildebeest-chess-backend"
 version = "0.1.0"
-description = "Authoritative rules engine and AI for an 11x11 chess variant."
+description = "Personal project: a rules engine and computer opponent for an 11x11 chess variant."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

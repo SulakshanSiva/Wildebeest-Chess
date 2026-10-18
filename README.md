@@ -1,11 +1,10 @@
 # Wildebeest Chess
 
-Wildebeest Chess is an 11×11 chess variant with custom pieces and special squares. The
-project's goal is a website where you can play a game against a computer opponent.
+Wildebeest Chess is a personal project: an 11×11 chess variant with custom pieces and special
+squares. The goal is a website where you can play a game against a computer opponent.
 
-The rules follow the course document *Two-Player Wildebeest (2PW), version 2.2*. Pieces
-that are created during play, such as the Jet Pack King and the Time Machine, do not appear
-in the starting position; see the rules for how they arise.
+Pieces that are created during play, such as the Jet Pack King and the Time Machine, do not
+appear in the starting position. They arise from the rules described in `backend/domain/`.
 
 ## Project layout
 
