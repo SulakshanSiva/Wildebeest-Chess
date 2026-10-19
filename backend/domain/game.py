@@ -75,6 +75,23 @@ class Game:
             return ()
         return legal_moves(self.position.board, self.side_to_move)
 
+    def require_current(self, expected_version: int | None = None) -> None:
+        """
+        Confirm the game can still be changed by a caller who saw a given version.
+
+        Checked before anything else a command does, so a caller who is out of
+        date hears that first rather than an error about a move that was only
+        illegal because the game had moved on.
+
+        Arguments:
+            expected_version: The version the caller last saw, or None to skip
+                the version check.
+        """
+        if self.status.is_over:
+            raise GameOverError
+        if expected_version is not None and expected_version != self.version:
+            raise StaleVersionError(expected_version, self.version)
+
     def find_move(
         self,
         origin: Coordinate,
@@ -129,10 +146,7 @@ class Game:
         Returns:
             A new game with the move applied and the turn handed over.
         """
-        if self.status.is_over:
-            raise GameOverError
-        if expected_version is not None and expected_version != self.version:
-            raise StaleVersionError(expected_version, self.version)
+        self.require_current(expected_version)
         if move not in self.legal_moves():
             raise IllegalMoveError(f"{move} is not legal for {self.side_to_move.value}")
 
@@ -175,10 +189,7 @@ class Game:
         Returns:
             A finished game won by the opponent of the resigning side.
         """
-        if self.status.is_over:
-            raise GameOverError
-        if expected_version is not None and expected_version != self.version:
-            raise StaleVersionError(expected_version, self.version)
+        self.require_current(expected_version)
 
         winner = GameStatus.WHITE_WINS if side is Color.BLACK else GameStatus.BLACK_WINS
         return replace(
