@@ -1,0 +1,19 @@
+/* The single place to change the colour scheme. Channels are "R G B" so Tailwind can add opacity. */
+:root {
+  --color-felt: 16 39 29;
+  --color-felt-raised: 27 58 42;
+  --color-ink: 36 59 43;
+  --color-gold: 217 189 120;
+  --color-gold-light: 242 216 148;
+  --color-cream: 255 248 231;
+
+  --board-light: #e1c889;
+  --board-dark: #76573a;
+  --board-backdrop: #c5a86a;
+  --piece-white-fill: rgb(var(--color-cream));
+  --piece-white-ink: rgb(var(--color-ink));
+  --piece-black-fill: #1c1410;
+  --piece-black-ink: rgb(var(--color-cream));
+  --piece-black-ring: rgb(var(--color-gold) / 0.55);
+  --shadow-strong: rgba(31, 18, 8, 0.28);
+}

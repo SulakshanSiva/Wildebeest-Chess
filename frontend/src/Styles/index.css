@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&display=swap');
 
+@import './theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,10 +34,10 @@ body,
 
 .menu__board {
   z-index: -2;
-  background-color: #c5a86a;
+  background-color: var(--board-backdrop);
   background-image: repeating-conic-gradient(
-    #e1c889 0 25%,
-    #76573a 0 50%
+    var(--board-light) 0 25%,
+    var(--board-dark) 0 50%
   );
   background-position: center;
   background-size: clamp(4rem, 12vw, 9rem) clamp(4rem, 12vw, 9rem);
@@ -46,7 +48,7 @@ body,
 .menu__overlay {
   z-index: -1;
   background:
-    radial-gradient(circle at center, rgba(16, 39, 29, 0.22), rgba(7, 20, 14, 0.76)),
+    radial-gradient(circle at center, rgb(var(--color-felt) / 0.22), rgba(7, 20, 14, 0.76)),
     linear-gradient(135deg, rgba(12, 37, 25, 0.5), rgba(87, 49, 24, 0.3));
 }
 
@@ -56,7 +58,7 @@ body,
 }
 
 .menu__play-button {
-  box-shadow: 0 8px 20px rgba(31, 18, 8, 0.28);
+  box-shadow: 0 8px 20px var(--shadow-strong);
 }
 
 .menu__credits {
@@ -65,6 +67,245 @@ body,
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
+}
+
+/* Colour choice swatches */
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 9999px;
+  border: 2px solid rgb(var(--color-gold-light));
+  font-size: 3rem;
+}
+
+.swatch--white {
+  background: var(--piece-white-fill);
+  color: var(--piece-white-ink);
+}
+
+.swatch--black {
+  background: var(--piece-black-fill);
+  color: var(--piece-black-ink);
+}
+
+/* Rules popup */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(7, 20, 14, 0.78);
+}
+
+.modal {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Game screen: bars | board | bars. The board takes whatever width and height are left so it always fits */
+.game {
+  --label-size: 1.75rem;
+  --bar-width: 5.5rem;
+  --layout-gap: 1rem;
+  --board-size: min(
+    calc(100vw - 2 * var(--bar-width) - 2 * var(--layout-gap) - var(--label-size) - 2rem),
+    calc(100vh - 10rem),
+    46rem
+  );
+}
+
+.game__layout {
+  display: grid;
+  grid-template-columns: var(--bar-width) auto var(--bar-width);
+  grid-template-areas: 'left board right';
+  gap: var(--layout-gap);
+  justify-content: center;
+  align-items: start;
+}
+
+.game__frame {
+  grid-area: board;
+  display: grid;
+  grid-template-columns: var(--label-size) var(--board-size);
+  grid-template-rows: var(--board-size) var(--label-size);
+  justify-content: center;
+}
+
+.game__ranks,
+.game__files {
+  display: grid;
+  color: rgb(var(--color-gold-light));
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.6rem, 1.8vw, 0.85rem);
+  font-weight: 700;
+}
+
+.game__ranks {
+  grid-template-rows: repeat(11, 1fr);
+}
+
+.game__files {
+  grid-column: 2;
+  grid-template-columns: repeat(11, 1fr);
+}
+
+.game__ranks span,
+.game__files span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game__board {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  border: 3px solid rgb(var(--color-gold));
+  border-radius: 0.25rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.game__square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+
+.game__square--light {
+  background: var(--board-light);
+}
+
+.game__square--dark {
+  background: var(--board-dark);
+}
+
+.game__terrain {
+  position: absolute;
+  font-size: 55cqw;
+  opacity: 0.45;
+}
+
+.piece {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 82%;
+  height: 82%;
+  border-radius: 9999px;
+  font-size: 52cqw;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.piece--classic {
+  font-size: 72cqw;
+}
+
+.piece--white {
+  background: var(--piece-white-fill);
+  color: var(--piece-white-ink);
+}
+
+.piece--black {
+  background: var(--piece-black-fill);
+  color: var(--piece-black-ink);
+  /* Keeps a dark token visible on dark squares and on the dark captured bars */
+  outline: 1px solid var(--piece-black-ring);
+}
+
+/* Captured piece bars, the same height as the board */
+.captured {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: var(--board-size);
+  padding: 0.5rem;
+  border: 1px solid rgb(var(--color-gold) / 0.5);
+  border-radius: 0.75rem;
+  background: rgb(var(--color-felt) / 0.85);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.captured--left {
+  grid-area: left;
+}
+
+.captured--right {
+  grid-area: right;
+}
+
+.captured__title {
+  color: rgb(var(--color-gold-light));
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.captured__empty {
+  color: rgb(var(--color-cream) / 0.55);
+  font-size: 0.7rem;
+  font-style: italic;
+  text-align: center;
+}
+
+.captured__list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-content: start;
+  gap: 0.25rem;
+  overflow-y: auto;
+}
+
+/* Same container trick as a board square, so a captured token scales to its slot */
+.captured__slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  container-type: size;
+}
+
+/* Phones have no room beside the board, so the bars become strips above and below it */
+@media (max-width: 767px) {
+  .game {
+    --board-size: min(calc(100vw - var(--label-size) - 1.5rem), calc(100vh - 17rem));
+    --layout-gap: 0.5rem;
+  }
+
+  .game__layout {
+    grid-template-columns: auto;
+    grid-template-areas: 'left' 'board' 'right';
+  }
+
+  .captured {
+    flex-direction: row;
+    align-items: center;
+    height: auto;
+    min-height: 2.75rem;
+  }
+
+  .captured__title {
+    flex: none;
+    width: 4.5rem;
+    text-align: left;
+  }
+
+  .captured__list {
+    flex: 1;
+    grid-template-columns: repeat(auto-fill, minmax(1.6rem, 1fr));
+  }
 }
 
 @keyframes title-fade-in {
