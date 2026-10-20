@@ -57,7 +57,13 @@ const Game = ({ side, onExit, onPlayAgain, onShowRules }: Readonly<GameProps>) =
       </Button>
 
       <section className='game px-2 pb-6 pt-20 sm:pt-16'>
-        <TurnIndicator side={side} phase={game.phase} error={game.error} onRetry={game.retry} />
+        <TurnIndicator
+          side={side}
+          phase={game.phase}
+          error={game.error}
+          retryLabel={game.gameGone ? TEXT.game.newGame : TEXT.game.retry}
+          onRetry={game.retry}
+        />
         <div className='game__layout'>
           <MoveHistory entries={game.history} />
           <CapturedBar title={TEXT.game.aiCaptures} pieces={game.captured[side]} placement='left' />

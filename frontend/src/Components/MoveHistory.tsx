@@ -49,7 +49,7 @@ const MoveHistory = ({ entries }: Readonly<MoveHistoryProps>) => {
               {entry.events.length > 0 && (
                 <ul className='history__events'>
                   {entry.events.map((event) => (
-                    <li key={`${event.kind}-${event.text}`} className={`history__event history__event--${event.kind}`}>
+                    <li key={event.id} className={`history__event history__event--${event.kind}`}>
                       <span className='history__icon' aria-hidden='true'>
                         {EVENT_ICONS[event.kind]}
                       </span>

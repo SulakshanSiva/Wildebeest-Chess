@@ -3,7 +3,7 @@ import { FILES, JET_PACK_CHAR, TRANSPORTER_CHAR } from '../Data/layout'
 import { pieceForSymbol, sideOfSymbol } from '../Data/pieces'
 import { Side } from '../Data/types'
 
-export interface PlacedCell {
+interface PlacedCell {
   square: Square
   cell: Cell
 }

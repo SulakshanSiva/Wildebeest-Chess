@@ -58,6 +58,8 @@ export const TEXT = {
     aiThinking: 'AI is thinking',
     over: 'Game over',
     retry: 'Try again',
+    newGame: 'New game',
+    gameGone: 'This game is no longer on the server. It may have restarted, or the game expired.',
     connectionError: 'Could not reach the game server. Is the backend running?',
     possibleMove: 'possible move',
     selected: 'selected',

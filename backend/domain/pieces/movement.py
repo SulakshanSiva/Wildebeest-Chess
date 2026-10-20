@@ -51,7 +51,9 @@ class LeapRule(MovementRule):
 
             if board.is_empty(destination):
                 moves.append(Move.simple(origin, destination, capture=False))
-            elif self.can_capture and board.enemy_at(destination, piece.color) is not None:
+            elif (
+                self.can_capture and board.capturable_enemy_at(destination, piece.color) is not None
+            ):
                 moves.append(Move.simple(origin, destination, capture=True))
 
         return tuple(moves)
@@ -112,8 +114,8 @@ class SlideRule(MovementRule):
                     moves.append(Move.simple(origin, destination, capture=False))
                     continue
 
-                # Occupied: capture an enemy, then stop either way.
-                if board.enemy_at(destination, piece.color) is not None:
+                # Occupied: capture an enemy that can be captured, then stop either way.
+                if board.capturable_enemy_at(destination, piece.color) is not None:
                     moves.append(Move.simple(origin, destination, capture=True))
                 break
 
@@ -178,7 +180,7 @@ class PawnRule(MovementRule):
             target = origin.shifted(Offset(piece.color.forward, sideways))
             if target is None:
                 continue
-            if board.enemy_at(target, piece.color) is not None:
+            if board.capturable_enemy_at(target, piece.color) is not None:
                 moves.append(Move.simple(origin, target, capture=True))
 
         return tuple(moves)

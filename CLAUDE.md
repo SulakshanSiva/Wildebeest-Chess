@@ -53,8 +53,10 @@ Install the locked dependencies with `uv sync --extra dev`, and run the same che
 `uv run`. `uv.lock` pins every version, so a fresh checkout installs exactly what CI installs.
 Configuration lives in `pyproject.toml`, not in separate config files.
 
-SonarCloud runs in CI after the four checks, configured by `sonar-project.properties`.
-Its results are the reference for the Sonar requirement below.
+After the four checks, CI runs the frontend tests with coverage
+(`CI=true npm test -- --watchAll=false --coverage` in `frontend/`), then SonarCloud,
+configured by `sonar-project.properties`. Its results are the reference for the Sonar
+requirement below.
 
 The lint step enforces the architecture, not just style: `backend/domain/` is banned
 from importing `fastapi`, `pydantic`, `sqlalchemy`, or `redis`, so a dependency-direction

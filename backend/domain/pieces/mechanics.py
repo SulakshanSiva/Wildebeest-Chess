@@ -176,11 +176,11 @@ class FlingRule(MovementRule):
                 moves.append(Move.fling(catapult, passenger, landing))
             else:
                 target = board.require_piece_at(landing)
-                # A flung piece may never take a King or a Gorilla.
+                # A flung piece may never take a King, or a Gorilla, which no move can capture.
                 if (
                     target.color is not colour
                     and not target.kind.is_royal
-                    and target.kind is not PieceKind.GORILLA
+                    and target.kind.can_be_captured
                 ):
                     moves.append(Move.fling(catapult, passenger, landing))
             landing = landing.shifted(direction)

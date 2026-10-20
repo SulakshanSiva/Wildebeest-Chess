@@ -17,6 +17,9 @@ export type Phase = 'starting' | 'yourTurn' | 'aiThinking' | 'over' | 'error'
 
 const NO_TARGETS = new Map<string, Move[]>()
 
+// The backend's status for a game id it does not hold.
+const GAME_NOT_FOUND = 404
+
 /**
  * Works out what the game is waiting for after a response.
  *
@@ -71,6 +74,8 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
   const [lastMove, setLastMove] = useState<Move | null>(null)
   const [captured, setCaptured] = useState<CapturedBySide>(NO_CAPTURES)
   const [error, setError] = useState<string | null>(null)
+  // The server no longer has this game: it restarted, or the game sat idle until it expired.
+  const [gameGone, setGameGone] = useState(false)
   const [choices, setChoices] = useState<Move[] | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const inFlight = useRef<AbortController | null>(null)
@@ -110,7 +115,10 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
       } catch (caught) {
         // A cancelled request was replaced or the screen closed, so there is nothing to show.
         if (controller.signal.aborted) return
-        setError(caught instanceof ApiError ? caught.message : TEXT.game.connectionError)
+        const gone = caught instanceof ApiError && caught.status === GAME_NOT_FOUND
+        setGameGone(gone)
+        if (gone) setError(TEXT.game.gameGone)
+        else setError(caught instanceof ApiError ? caught.message : TEXT.game.connectionError)
         setPhase('error')
       }
     },
@@ -129,6 +137,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     setHistory([])
     setChoices(null)
     setError(null)
+    setGameGone(false)
     setPhase(firstPhase(side))
     // run handles its own errors, so its promise is deliberately not awaited here or below.
     void run((signal) => createGame(side, signal), new Map())
@@ -182,10 +191,11 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
   }
 
   /**
-   * Fetches the game again after a failed request, or starts over if there is no game yet.
+   * Fetches the game again after a failed request, or starts a new one if it cannot be fetched.
    */
   const retry = () => {
-    if (!game) {
+    // Asking again for a game the server has lost can never succeed, so begin a fresh one.
+    if (!game || gameGone) {
       start()
       return
     }
@@ -216,6 +226,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     captured,
     history,
     error,
+    gameGone,
     outcome,
     endReason: game?.end_reason ?? null,
     choices,

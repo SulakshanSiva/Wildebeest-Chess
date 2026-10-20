@@ -69,6 +69,20 @@ class PieceKind(StrEnum):
         return self in (PieceKind.KING, PieceKind.JET_PACK_KING)
 
     @property
+    def can_be_captured(self) -> bool:
+        """
+        Say whether a move can capture this piece.
+
+        The rules say a Gorilla "does not capture, nor can it be captured". No
+        move, step or fling may land on one to take it; only poison and a Golf
+        Cart rampage, which are after-effects rather than moves, remove one.
+
+        Returns:
+            False for the Gorilla, True for every other kind.
+        """
+        return self is not PieceKind.GORILLA
+
+    @property
     def is_hovering(self) -> bool:
         """
         Say whether this piece hovers above the board.

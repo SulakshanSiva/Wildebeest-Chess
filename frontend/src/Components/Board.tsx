@@ -1,5 +1,5 @@
 import React from 'react'
-import { BoardCells, Move, Square } from '../Api/types'
+import { BoardCells, Move, MoveAction, Square } from '../Api/types'
 import { TEXT } from '../Data/content'
 import { FILES } from '../Data/layout'
 import { pieceForSymbol, TERRAIN } from '../Data/pieces'
@@ -19,11 +19,15 @@ interface BoardProps {
 
 const TERRAIN_BY_NAME = new Map(TERRAIN.map((info) => [info.terrain, info]))
 
+// Moves that remove the piece on their destination. A Gorilla's push moves it instead.
+const REMOVING_ACTIONS: MoveAction[] = ['capture', 'crush', 'fling']
+
 /**
  * The 11x11 board with rank numbers on the left and file letters underneath.
  *
  * Every square is a button. After a piece is selected, the squares it can reach are marked: a
- * dot on an empty square, a ring on an occupied one.
+ * dot on an empty square, a red ring where a piece would be removed, a gold ring where a Gorilla
+ * would push one.
  *
  * @param board The cells to draw, row 0 first.
  * @param side The colour the player chose; the board is oriented to it.
@@ -47,7 +51,9 @@ const Board = ({ board, side, selected, targets, lastMove, interactive, onSquare
         {rows.flat().map(({ square, cell }) => {
           const piece = cell.piece ? pieceForSymbol(cell.piece.symbol) : undefined
           const terrain = TERRAIN_BY_NAME.get(cell.terrain)
-          const isTarget = targets.has(squareKey(square))
+          const targetMoves = targets.get(squareKey(square))
+          const isTarget = targetMoves !== undefined
+          const removes = targetMoves?.some((move) => REMOVING_ACTIONS.includes(move.action)) ?? false
           const isSelected = sameSquare(square, selected)
           const isLastMove = lastMove !== null && (sameSquare(square, lastMove.origin) || sameSquare(square, lastMove.destination))
 
@@ -56,7 +62,8 @@ const Board = ({ board, side, selected, targets, lastMove, interactive, onSquare
             (square.row + square.column) % 2 === 0 ? 'game__square--dark' : 'game__square--light',
             isSelected ? 'game__square--selected' : '',
             isLastMove ? 'game__square--last-move' : '',
-            isTarget && cell.piece ? 'game__square--capture-target' : '',
+            isTarget && cell.piece && removes ? 'game__square--capture-target' : '',
+            isTarget && cell.piece && !removes ? 'game__square--push-target' : '',
           ]
           const description = [
             squareName(square),

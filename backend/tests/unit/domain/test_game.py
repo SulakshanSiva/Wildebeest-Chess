@@ -460,3 +460,61 @@ def test_a_repetition_key_ignores_piece_identity() -> None:
     other = Position(board=board, side_to_move=Color.WHITE)
 
     assert other.repetition_key == one.position.repetition_key
+
+
+def test_no_move_can_capture_a_gorilla() -> None:
+    """
+    Follow the rule that a Gorilla "does not capture, nor can it be captured":
+    a Rook, Knight, Pawn or Golf Cart may stand next to one but never take it.
+    """
+    game = _two_kings_game(
+        [
+            (Coordinate(5, 0), PieceKind.ROOK, Color.WHITE),
+            (Coordinate(5, 6), PieceKind.GORILLA, Color.BLACK),
+            (Coordinate(3, 3), PieceKind.KNIGHT, Color.WHITE),
+            (Coordinate(4, 5), PieceKind.GORILLA, Color.BLACK),
+            (Coordinate(1, 8), PieceKind.PAWN, Color.WHITE),
+            (Coordinate(2, 9), PieceKind.GORILLA, Color.BLACK),
+            (Coordinate(0, 3), PieceKind.GOLF_CART, Color.WHITE),
+            (Coordinate(0, 4), PieceKind.GORILLA, Color.BLACK),
+        ]
+    )
+    gorillas = {
+        square for square, piece in game.position.board.pieces() if piece.kind is PieceKind.GORILLA
+    }
+
+    assert all(move.destination not in gorillas for move in game.legal_moves())
+
+
+def test_a_gorilla_blocks_a_sliding_piece() -> None:
+    """
+    Stop a Rook's line at a Gorilla, since it can neither take it nor pass it.
+    """
+    game = _two_kings_game(
+        [
+            (Coordinate(5, 0), PieceKind.ROOK, Color.WHITE),
+            (Coordinate(5, 6), PieceKind.GORILLA, Color.BLACK),
+        ]
+    )
+    reached = {move.destination for move in game.legal_moves() if move.origin == Coordinate(5, 0)}
+
+    assert Coordinate(5, 5) in reached
+    assert Coordinate(5, 6) not in reached
+    assert Coordinate(5, 7) not in reached
+
+
+def test_poison_still_removes_a_gorilla() -> None:
+    """
+    Keep the rules' exception: a Serpent can kill a Gorilla by poisoning it.
+    """
+    game = _two_kings_game(
+        [
+            (Coordinate(5, 4), PieceKind.SERPENT, Color.WHITE),
+            (Coordinate(5, 6), PieceKind.GORILLA, Color.BLACK),
+        ]
+    )
+
+    after = game.apply_move(game.find_move(Coordinate(5, 4), Coordinate(5, 5)))
+
+    assert after.position.board.piece_at(Coordinate(5, 6)) is None
+    assert after.history[0].causes == ((4, RemovalCause.POISON),)

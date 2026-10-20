@@ -7,6 +7,7 @@ interface TurnIndicatorProps {
   side: Side
   phase: Phase
   error: string | null
+  retryLabel: string
   onRetry: () => void
 }
 
@@ -23,16 +24,17 @@ const LABELS: Record<Exclude<Phase, 'error'>, string> = {
  * @param side The colour the player chose.
  * @param phase What the game is waiting for.
  * @param error The message to show when a request failed.
+ * @param retryLabel The wording of the button shown with the error.
  * @param onRetry Called when the player retries after an error.
  */
-const TurnIndicator = ({ side, phase, error, onRetry }: Readonly<TurnIndicatorProps>) => (
+const TurnIndicator = ({ side, phase, error, retryLabel, onRetry }: Readonly<TurnIndicatorProps>) => (
   <div className='mb-3 flex flex-wrap items-center justify-center gap-3' role='status' aria-live='polite'>
     <span className='text-xs font-semibold uppercase tracking-[0.35em] text-gold'>{TEXT.game.youPlay(side)}</span>
     {phase === 'error' ? (
       <span className='turn turn--error'>
         {error}
         <button type='button' onClick={onRetry} className='turn__retry'>
-          {TEXT.game.retry}
+          {retryLabel}
         </button>
       </span>
     ) : (

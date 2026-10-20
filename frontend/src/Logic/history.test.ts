@@ -1,7 +1,15 @@
 import { Move, Piece, Turn } from '../Api/types'
-import { countRepeats, describeTurn, listPhrases } from './history'
+import { countRepeats, describeTurn, HistoryEntry, listPhrases } from './history'
 
 const at = (row: number, column: number) => ({ row, column })
+
+/**
+ * Gives an entry's events without their ids, so expectations can list just kind and text.
+ *
+ * @param entry The described turn.
+ * @returns Each event's kind and text.
+ */
+const eventsOf = (entry: HistoryEntry) => entry.events.map(({ kind, text }) => ({ kind, text }))
 
 /**
  * Builds a turn with sensible defaults for anything not given.
@@ -35,7 +43,7 @@ describe('describeTurn', () => {
     const entry = describeTurn(turn({}), known([1, 'knight', 'white']), 'white')
     expect(entry.summary).toBe('Knight B1 → C3')
     expect(entry.byPlayer).toBe(true)
-    expect(entry.events).toEqual([])
+    expect(eventsOf(entry)).toEqual([])
   })
 
   it('names whose piece was captured from the player’s side', () => {
@@ -45,7 +53,7 @@ describe('describeTurn', () => {
       known([1, 'knight', 'white'], [9, 'pawn', 'black']),
       'white',
     )
-    expect(entry.events).toEqual([{ kind: 'capture', text: 'Captured the AI’s Pawn' }])
+    expect(eventsOf(entry)).toEqual([{ kind: 'capture', text: 'Captured the AI’s Pawn' }])
   })
 
   it('says where a Gorilla pushed a piece', () => {
@@ -56,7 +64,7 @@ describe('describeTurn', () => {
       'white',
     )
     expect(entry.summary).toBe('Gorilla A2 → B2')
-    expect(entry.events).toEqual([{ kind: 'push', text: 'Pushed your Pawn to C2' }])
+    expect(eventsOf(entry)).toEqual([{ kind: 'push', text: 'Pushed your Pawn to C2' }])
   })
 
   it('names the Catapult behind a fling and what the flung piece landed on', () => {
@@ -67,7 +75,7 @@ describe('describeTurn', () => {
       'white',
     )
     expect(entry.summary).toBe('Knight J1 → A10')
-    expect(entry.events).toEqual([
+    expect(eventsOf(entry)).toEqual([
       { kind: 'fling', text: 'Flung by the Catapult on I1' },
       { kind: 'fling', text: 'Landed on the AI’s Rook, capturing it' },
     ])
@@ -85,7 +93,7 @@ describe('describeTurn', () => {
       'white',
     )
     expect(entry.byPlayer).toBe(false)
-    expect(entry.events).toEqual([
+    expect(eventsOf(entry)).toEqual([
       { kind: 'power', text: 'The AI’s King strapped on the jet pack' },
       { kind: 'teleport', text: 'Teleported the AI’s Rook B4 → J8' },
     ])
@@ -97,7 +105,7 @@ describe('describeTurn', () => {
       known([1, 'knight', 'white'], [3, 'pawn', 'white']),
       'white',
     )
-    expect(entry.events[0].text).toBe('Your Pawn reached the far row and became a Time Machine')
+    expect(eventsOf(entry)[0].text).toBe('Your Pawn reached the far row and became a Time Machine')
   })
 
   it('groups an explosion’s victims under the Joey that exploded', () => {
@@ -112,7 +120,7 @@ describe('describeTurn', () => {
       known([1, 'pawn', 'white'], [2, 'joey', 'white'], [3, 'king', 'white'], [4, 'pawn', 'black']),
       'white',
     )
-    expect(entry.events).toEqual([
+    expect(eventsOf(entry)).toEqual([
       { kind: 'explosion', text: 'Your Prince Joey exploded, taking your King and the AI’s Pawn' },
     ])
   })
@@ -129,10 +137,36 @@ describe('describeTurn', () => {
       known([1, 'knight', 'white'], [7, 'rook', 'black'], [8, 'pawn', 'black'], [9, 'bishop', 'white']),
       'white',
     )
-    expect(entry.events).toEqual([
+    expect(eventsOf(entry)).toEqual([
       { kind: 'poison', text: 'Poison took the AI’s Pawn' },
       { kind: 'rampage', text: 'A Golf Cart rampage destroyed the AI’s Rook and your Bishop' },
     ])
+  })
+})
+
+describe('describeTurn event ids', () => {
+  it('gives every event a distinct id, even when two lines read the same', () => {
+    const entry = describeTurn(
+      turn({ ply: 4, promoted: [{ id: 3, kind: 'time_machine' }, { id: 4, kind: 'time_machine' }] }),
+      known([1, 'knight', 'white'], [3, 'pawn', 'white'], [4, 'pawn', 'white']),
+      'white',
+    )
+    expect(entry.events[0].text).toBe(entry.events[1].text)
+    expect(entry.events.map((event) => event.id)).toEqual(['4-0', '4-1'])
+  })
+
+  it('groups every poisoned piece into one line', () => {
+    const entry = describeTurn(
+      turn({
+        captured: [
+          { id: 8, kind: 'pawn', cause: 'poison' },
+          { id: 9, kind: 'pawn', cause: 'poison' },
+        ],
+      }),
+      known([1, 'knight', 'white'], [8, 'pawn', 'black'], [9, 'pawn', 'black']),
+      'white',
+    )
+    expect(eventsOf(entry)).toEqual([{ kind: 'poison', text: 'Poison took the AI’s Pawn ×2' }])
   })
 })
 

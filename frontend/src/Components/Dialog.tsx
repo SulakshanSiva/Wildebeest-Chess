@@ -1,7 +1,7 @@
 import React, { useId } from 'react'
 import Modal from './Modal'
 
-export interface DialogAction {
+interface DialogAction {
   label: string
   onClick: () => void
   primary?: boolean

@@ -16,6 +16,8 @@ export type HistoryEventKind =
   | 'explosion'
 
 export interface HistoryEvent {
+  // Unique within the game, so two identical lines in one turn still get distinct React keys.
+  id: string
   kind: HistoryEventKind
   text: string
 }
@@ -88,40 +90,36 @@ export const describeTurn = (turn: Turn, pieces: Map<number, Piece>, humanColor:
 
   const { move } = turn
   const events: HistoryEvent[] = []
+  const add = (kind: HistoryEventKind, text: string) => events.push({ id: `${turn.ply}-${events.length}`, kind, text })
 
-  for (const victim of removedBy('capture')) events.push({ kind: 'capture', text: TEXT.history.captured(phrase(victim)) })
-  for (const victim of removedBy('crush')) events.push({ kind: 'crush', text: TEXT.history.crushed(phrase(victim)) })
+  for (const victim of removedBy('capture')) add('capture', TEXT.history.captured(phrase(victim)))
+  for (const victim of removedBy('crush')) add('crush', TEXT.history.crushed(phrase(victim)))
   if (turn.displaced) {
     // A Gorilla steps one square, so the pushed piece lands one more step the same way.
     const pushedTo = {
       row: 2 * move.destination.row - move.origin.row,
       column: 2 * move.destination.column - move.origin.column,
     }
-    events.push({ kind: 'push', text: TEXT.history.pushed(phrase(turn.displaced), squareName(pushedTo)) })
+    add('push', TEXT.history.pushed(phrase(turn.displaced), squareName(pushedTo)))
   }
-  if (move.action === 'fling') events.push({ kind: 'fling', text: TEXT.history.flung(squareName(move.actor)) })
-  for (const victim of removedBy('fling')) events.push({ kind: 'fling', text: TEXT.history.flungOnto(phrase(victim)) })
+  if (move.action === 'fling') add('fling', TEXT.history.flung(squareName(move.actor)))
+  for (const victim of removedBy('fling')) add('fling', TEXT.history.flungOnto(phrase(victim)))
 
-  for (const victim of removedBy('poison')) events.push({ kind: 'poison', text: TEXT.history.poisoned(phrase(victim)) })
+  const poisoned = removedBy('poison')
+  if (poisoned.length > 0) add('poison', TEXT.history.poisoned(phrases(poisoned)))
 
   for (const promoted of turn.promoted) {
     const before = pieces.get(promoted.id)
     const piece = capitalise(phrase({ id: promoted.id, kind: before?.kind ?? promoted.kind }))
     const describe = TEXT.history.became[promoted.kind]
-    events.push({
-      kind: 'power',
-      text: describe ? describe(piece) : TEXT.history.becameOther(piece, nameOf(promoted.kind)),
-    })
+    add('power', describe ? describe(piece) : TEXT.history.becameOther(piece, nameOf(promoted.kind)))
   }
 
   const rampaged = removedBy('rampage')
-  if (rampaged.length > 0) events.push({ kind: 'rampage', text: TEXT.history.rampage(phrases(rampaged)) })
+  if (rampaged.length > 0) add('rampage', TEXT.history.rampage(phrases(rampaged)))
 
   for (const journey of turn.transported) {
-    events.push({
-      kind: 'teleport',
-      text: TEXT.history.teleported(phrase(journey), squareName(journey.origin), squareName(journey.destination)),
-    })
+    add('teleport', TEXT.history.teleported(phrase(journey), squareName(journey.origin), squareName(journey.destination)))
   }
 
   const exploded = removedBy('explosion')
@@ -129,10 +127,7 @@ export const describeTurn = (turn: Turn, pieces: Map<number, Piece>, humanColor:
   const caught = exploded.filter((removed) => removed.kind !== 'joey')
   if (joeys.length > 0) {
     const joey = capitalise(phrases(joeys))
-    events.push({
-      kind: 'explosion',
-      text: caught.length > 0 ? TEXT.history.explodedTaking(joey, phrases(caught)) : TEXT.history.exploded(joey),
-    })
+    add('explosion', caught.length > 0 ? TEXT.history.explodedTaking(joey, phrases(caught)) : TEXT.history.exploded(joey))
   }
 
   return {

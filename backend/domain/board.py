@@ -280,6 +280,21 @@ class Board:
             return piece
         return None
 
+    def capturable_enemy_at(self, square: Coordinate, color: Color) -> Piece | None:
+        """
+        Give the piece on a square if a piece of a colour may capture it by moving.
+
+        Arguments:
+            square: The square to test. May be out of bounds.
+            color: The colour of the piece that would capture.
+
+        Returns:
+            The enemy piece, or None when there is none or it cannot be captured,
+            as a Gorilla cannot.
+        """
+        enemy = self.enemy_at(square, color)
+        return enemy if enemy is not None and enemy.kind.can_be_captured else None
+
     def pieces(self, color: Color | None = None) -> Iterator[tuple[Coordinate, Piece]]:
         """
         Walk every occupied square.

@@ -299,12 +299,17 @@ body,
   box-shadow: inset 0 0 0 4px var(--highlight-selected);
 }
 
-.game__square--capture-target::after {
+.game__square--capture-target::after,
+.game__square--push-target::after {
   content: '';
   position: absolute;
   inset: 6%;
   border: 4px solid var(--target-capture-ring);
   border-radius: 9999px;
+}
+
+.game__square--push-target::after {
+  border-color: var(--target-push-ring);
 }
 
 .game__target-dot {
