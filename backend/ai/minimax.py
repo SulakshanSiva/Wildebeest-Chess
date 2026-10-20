@@ -7,6 +7,7 @@ from ..domain.enums import Color, MoveAction
 from ..domain.errors import GameOverError, InvariantViolation
 from ..domain.game import Game
 from ..domain.move import Move
+from ..domain.position import Position, RepetitionKey
 from ..domain.rules.terrain import TransporterLinks
 from ..domain.rules.turn import TurnResult, resolve_turn
 from .evaluation import WIN_SCORE, evaluate, terminal_score
@@ -16,6 +17,11 @@ DEFAULT_DEPTH = 2
 # Beyond any reachable score, so the first real score always replaces it.
 INFINITY = WIN_SCORE * 10
 REMOVING_ACTIONS = (MoveAction.CAPTURE, MoveAction.CRUSH, MoveAction.FLING)
+
+# Taken off any line where the AI's own move returns to a position already
+# played. More than a few squares of positional pull, so it beats shuffling
+# between equal moves, but less than a pawn, so it never gives away material.
+REPETITION_PENALTY = 0.5
 
 
 class MinimaxPlayer:
@@ -32,6 +38,9 @@ class MinimaxPlayer:
     move uses, after-effects included. In this game poison, a Golf Cart rampage
     or a Joey explosion can take a King after the move that caused it, so a
     search over bare moves would walk straight into them.
+
+    Moves that return to a position already played in the game are penalised,
+    so the AI does not shuffle one piece back and forth.
     """
 
     def __init__(self, depth: int = DEFAULT_DEPTH) -> None:
@@ -73,10 +82,14 @@ class MinimaxPlayer:
         if game.status.is_over:
             raise GameOverError
 
-        search = _Search(me=game.side_to_move, links=game.variant.transporter_links)
+        search = _Search(
+            me=game.side_to_move,
+            links=game.variant.transporter_links,
+            seen=game.seen_positions,
+        )
         best_move: Move | None = None
-        best_score = -INFINITY
-        alpha = -INFINITY
+        best_score: float = -INFINITY
+        alpha: float = -INFINITY
 
         for move in _ordered(game.position.board, game.legal_moves()):
             turn = resolve_turn(game.position, move, search.links)
@@ -100,12 +113,51 @@ class _Search:
     Attributes:
         me: The colour the AI is playing.
         links: The variant's transporter pad mapping.
+        seen: Every position played so far in the real game.
     """
 
     me: Color
     links: TransporterLinks
+    seen: frozenset[RepetitionKey]
 
-    def minimax(self, turn: TurnResult, depth: int, alpha: int, beta: int, ply: int) -> int:
+    def minimax(self, turn: TurnResult, depth: int, alpha: float, beta: float, ply: int) -> float:
+        """
+        Score a position, less the penalty if the AI's own move repeated it.
+
+        The penalty is a constant for this position, so the window is shifted by
+        it before searching below. Without the shift, pruning inside would compare
+        unpenalised scores against penalised bounds and could cut a move wrongly.
+
+        Arguments:
+            turn: The result of the move that produced this position.
+            depth: Turns still to look ahead.
+            alpha: The best score the AI is already guaranteed elsewhere.
+            beta: The best score the opponent is already guaranteed elsewhere.
+            ply: Turns since the root, used to prefer quicker wins.
+
+        Returns:
+            The position's score from the AI's point of view.
+        """
+        penalty = self._repetition_penalty(turn.position)
+        return self._search(turn, depth, alpha + penalty, beta + penalty, ply) - penalty
+
+    def _repetition_penalty(self, position: Position) -> float:
+        """
+        Price a position by whether the AI's move just returned to it.
+
+        Only the AI's own moves are judged: after them it is the opponent's turn.
+        Repeats the opponent chooses are the opponent's business.
+
+        Arguments:
+            position: The position a move produced.
+
+        Returns:
+            REPETITION_PENALTY for a repeat the AI made, otherwise zero.
+        """
+        made_by_ai = position.side_to_move is not self.me
+        return REPETITION_PENALTY if made_by_ai and position.repetition_key in self.seen else 0.0
+
+    def _search(self, turn: TurnResult, depth: int, alpha: float, beta: float, ply: int) -> float:
         """
         Score a position by searching the moves that follow it.
 
@@ -130,7 +182,7 @@ class _Search:
         moves = _ordered(turn.position.board, turn.next_moves)
 
         if turn.position.side_to_move is self.me:
-            best = -INFINITY
+            best: float = -INFINITY
             for move in moves:
                 child = resolve_turn(turn.position, move, self.links)
                 best = max(best, self.minimax(child, depth - 1, alpha, beta, ply + 1))
@@ -141,7 +193,7 @@ class _Search:
                     break
             return best
 
-        worst = INFINITY
+        worst: float = INFINITY
         for move in moves:
             child = resolve_turn(turn.position, move, self.links)
             worst = min(worst, self.minimax(child, depth - 1, alpha, beta, ply + 1))

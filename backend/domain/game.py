@@ -12,7 +12,7 @@ from .errors import (
     StaleVersionError,
 )
 from .move import Move, MoveRecord
-from .position import Position
+from .position import Position, RepetitionKey
 from .rules.move_generator import legal_moves
 from .rules.turn import resolve_turn
 from .variant import Variant
@@ -43,6 +43,8 @@ class Game:
         status: Whether the game is active or who won.
         end_reason: Why it ended, or None while it is active.
         version: Incremented on every change, for optimistic concurrency.
+        seen_positions: Every position played so far, so the AI can avoid
+            shuffling back into one.
     """
 
     game_id: str
@@ -52,6 +54,7 @@ class Game:
     status: GameStatus = GameStatus.ACTIVE
     end_reason: EndReason | None = None
     version: int = 0
+    seen_positions: frozenset[RepetitionKey] = frozenset()
 
     @classmethod
     def start(cls, game_id: str, variant: Variant) -> Game:
@@ -65,7 +68,13 @@ class Game:
         Returns:
             A game at version zero with the first player to move.
         """
-        return cls(game_id=game_id, variant=variant, position=variant.initial_position())
+        position = variant.initial_position()
+        return cls(
+            game_id=game_id,
+            variant=variant,
+            position=position,
+            seen_positions=frozenset({position.repetition_key}),
+        )
 
     @property
     def side_to_move(self) -> Color:
@@ -192,6 +201,7 @@ class Game:
             self,
             position=result.position,
             history=(*self.history, record),
+            seen_positions=self.seen_positions | {result.position.repetition_key},
             status=result.status,
             end_reason=result.end_reason,
             version=self.version + 1,

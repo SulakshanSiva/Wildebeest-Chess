@@ -433,3 +433,30 @@ def test_a_transporter_journey_is_recorded() -> None:
     journey = record.transported[0]
     assert (journey.piece_id, journey.kind) == (3, PieceKind.ROOK)
     assert (journey.origin, journey.destination) == (Coordinate(3, 1), Coordinate(7, 9))
+
+
+def test_a_game_remembers_every_position_played() -> None:
+    """
+    Record the start and each new position, for the AI's repetition check.
+    """
+    game = Game.start("seen", Variant())
+    start = game.position.repetition_key
+
+    out = game.apply_move(game.find_move(KNIGHT_FROM, KNIGHT_TO))
+
+    assert start in game.seen_positions
+    assert out.seen_positions == {start, out.position.repetition_key}
+
+
+def test_a_repetition_key_ignores_piece_identity() -> None:
+    """
+    Treat a position as repeated when the same kinds stand on the same squares,
+    whichever piece ids they carry.
+    """
+    one = _two_kings_game([(Coordinate(5, 5), PieceKind.ROOK, Color.WHITE)])
+    board = one.position.board.without_piece(Coordinate(5, 5)).with_piece(
+        Coordinate(5, 5), create_piece(99, PieceKind.ROOK, Color.WHITE)
+    )
+    other = Position(board=board, side_to_move=Color.WHITE)
+
+    assert other.repetition_key == one.position.repetition_key

@@ -92,7 +92,7 @@ for SonarCloud too:
 
 ```bash
 cd frontend
-CI=true npx react-scripts test --watchAll=false --coverage
+CI=true npm test -- --watchAll=false --coverage
 ```
 
 ## Playing a game through the API

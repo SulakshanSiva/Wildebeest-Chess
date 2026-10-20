@@ -53,14 +53,16 @@ jobs:
         working-directory: frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      # Jest writes lcov paths relative to frontend/; Sonar resolves them from the
-      # repository root, so they are rewritten to frontend/src/... before the scan.
+      # npm test runs the locked react-scripts from package.json, so nothing is
+      # downloaded on demand as npx could. Jest writes lcov paths relative to
+      # frontend/; Sonar resolves them from the repository root, so they are
+      # rewritten to frontend/src/... before the scan.
       - name: Frontend tests
         working-directory: frontend
         env:
           CI: "true"
         run: |
-          npx react-scripts test --watchAll=false --coverage
+          npm test -- --watchAll=false --coverage
           sed -i 's|^SF:src/|SF:frontend/src/|' coverage/lcov.info
 
       - name: SonarCloud scan

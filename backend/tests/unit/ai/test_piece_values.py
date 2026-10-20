@@ -5,13 +5,30 @@ import pytest
 from backend.ai.piece_values import PIECE_VALUES, value_of
 from backend.domain.enums import PieceKind
 
-SCALE_TOP = 10
+# The heuristics from the original Wildebeest player, which the user asked to keep.
+ORIGINAL_VALUES = {
+    PieceKind.KING: 1000,
+    PieceKind.JET_PACK_KING: 1000,
+    PieceKind.JOEY: 50,
+    PieceKind.SERPENT: 10,
+    PieceKind.GORILLA: 5,
+    PieceKind.OLD_WOMAN: 5,
+    PieceKind.GOLF_CART: 5,
+    PieceKind.GRAND_EMPRESS: 6,
+    PieceKind.BEEKEEPER: 6,
+    PieceKind.BISHOP: 4,
+    PieceKind.ROOK: 3,
+    PieceKind.KNIGHT: 3,
+    PieceKind.CATAPULT: 3,
+    PieceKind.PAWN: 1,
+    PieceKind.TIME_MACHINE: 1,
+}
 
 
 @pytest.mark.parametrize("kind", list(PieceKind), ids=lambda kind: kind.value)
-def test_every_piece_has_a_whole_number_value_out_of_ten(kind: PieceKind) -> None:
+def test_every_piece_has_a_positive_whole_number_value(kind: PieceKind) -> None:
     """
-    Rate every piece kind on the 0-to-10 scale, so none is left unpriced.
+    Price every piece kind, so none is left out of the evaluation.
 
     Arguments:
         kind: The piece kind under test.
@@ -19,41 +36,31 @@ def test_every_piece_has_a_whole_number_value_out_of_ten(kind: PieceKind) -> Non
     value = value_of(kind)
 
     assert isinstance(value, int)
-    assert 0 <= value <= SCALE_TOP
+    assert value > 0
 
 
-def test_both_kings_top_the_scale() -> None:
+def test_the_values_are_the_original_players() -> None:
     """
-    Put the pieces whose loss ends the game at the top.
+    Keep exactly the heuristics the original Wildebeest player used.
     """
-    assert value_of(PieceKind.KING) == SCALE_TOP
-    assert value_of(PieceKind.JET_PACK_KING) == SCALE_TOP
+    assert PIECE_VALUES == ORIGINAL_VALUES
 
 
-def test_the_grand_empress_is_the_strongest_ordinary_piece() -> None:
+def test_a_king_outweighs_one_of_every_other_kind_combined() -> None:
     """
-    Rank the Knight-plus-Queen-plus-poison piece above every non-royal piece.
+    Value a King above one of each other piece kind put together.
     """
-    others = [
-        value
-        for kind, value in PIECE_VALUES.items()
-        if not kind.is_royal and kind is not PieceKind.GRAND_EMPRESS
-    ]
+    others = sum(value for kind, value in PIECE_VALUES.items() if not kind.is_royal)
 
-    assert value_of(PieceKind.GRAND_EMPRESS) > max(others)
+    assert value_of(PieceKind.KING) > others
+    assert value_of(PieceKind.JET_PACK_KING) == value_of(PieceKind.KING)
 
 
-def test_the_pawn_is_the_weakest_piece() -> None:
+def test_the_pawn_and_time_machine_are_the_weakest() -> None:
     """
     Keep the pawn as the unit every other value is measured against.
     """
-    assert value_of(PieceKind.PAWN) == min(PIECE_VALUES.values())
+    weakest = min(PIECE_VALUES.values())
 
-
-def test_the_chess_pieces_keep_their_chess_order() -> None:
-    """
-    Rank the pieces that move as in chess the way chess ranks them.
-    """
-    assert value_of(PieceKind.ROOK) > value_of(PieceKind.BISHOP)
-    assert value_of(PieceKind.BISHOP) == value_of(PieceKind.KNIGHT)
-    assert value_of(PieceKind.KNIGHT) > value_of(PieceKind.PAWN)
+    assert value_of(PieceKind.PAWN) == weakest
+    assert value_of(PieceKind.TIME_MACHINE) == weakest

@@ -4,7 +4,8 @@ import random
 
 import pytest
 
-from backend.ai.minimax import DEFAULT_DEPTH, MinimaxPlayer
+from backend.ai.minimax import DEFAULT_DEPTH, REPETITION_PENALTY, MinimaxPlayer
+from backend.ai.piece_values import value_of
 from backend.domain.board import Board, BoardDimensions
 from backend.domain.coordinates import Coordinate
 from backend.domain.enums import Color, GameStatus, MoveAction, PieceKind
@@ -193,3 +194,33 @@ def test_every_chosen_move_is_legal(seed: int) -> None:
         else:
             move = rng.choice(game.legal_moves())
         game = game.apply_move(move)
+
+
+def test_it_does_not_shuffle_back_into_a_position_it_has_played() -> None:
+    """
+    Stop the Joey shuffle: with material level, step to new positions instead.
+
+    Before the repetition penalty and the pressure term, every quiet move scored
+    the same, so the AI took the first one every turn and moved Prince Joey
+    F10 to F9 and back for as long as the opponent kept shuffling too.
+    """
+    game = Game.start("shuffle", Variant())
+    ai = MinimaxPlayer()
+    knight_out = (Coordinate(0, 9), Coordinate(2, 8))
+
+    for turn in range(6):
+        origin, destination = knight_out if turn % 2 == 0 else knight_out[::-1]
+        game = game.apply_move(game.find_move(origin, destination))
+        played = game.seen_positions
+
+        game = game.apply_move(ai.choose_move(game))
+
+        assert game.position.repetition_key not in played
+
+
+def test_avoiding_a_repeat_is_never_worth_a_pawn() -> None:
+    """
+    Keep the penalty below the smallest piece, so the AI never gives away
+    material just to avoid repeating a position.
+    """
+    assert 0 < REPETITION_PENALTY < value_of(PieceKind.PAWN)

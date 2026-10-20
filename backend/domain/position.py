@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from .board import Board
-from .enums import Color
+from .coordinates import Coordinate
+from .enums import Color, PieceKind
+
+# Which pieces stand where, and whose turn it is: what makes two positions the same.
+RepetitionKey = tuple[Color, tuple[tuple[Coordinate, PieceKind, Color], ...]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +53,21 @@ class Position:
             A new position with the side to move flipped and the ply advanced.
         """
         return replace(self, side_to_move=self.side_to_move.opponent, ply=self.ply + 1)
+
+    @property
+    def repetition_key(self) -> RepetitionKey:
+        """
+        Identify this position for spotting repetitions.
+
+        Two positions repeat when the same kinds and colours stand on the same
+        squares with the same side to move. Piece ids and first-move flags are
+        left out, so a piece that walks away and back makes the same key.
+
+        Returns:
+            A hashable key, equal for repeated positions.
+        """
+        pieces = tuple((square, piece.kind, piece.color) for square, piece in self.board.pieces())
+        return (self.side_to_move, pieces)
 
     def __str__(self) -> str:
         """

@@ -130,7 +130,8 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     setChoices(null)
     setError(null)
     setPhase(firstPhase(side))
-    run((signal) => createGame(side, signal), new Map())
+    // run handles its own errors, so its promise is deliberately not awaited here or below.
+    void run((signal) => createGame(side, signal), new Map())
   }, [run, side])
 
   useEffect(() => {
@@ -157,7 +158,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     setSelected(null)
     setChoices(null)
     setPhase('aiThinking')
-    run((signal) => submitMove(game, move, signal), known)
+    void run((signal) => submitMove(game, move, signal), known)
   }
 
   /**
@@ -192,7 +193,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     // The failed move may never have reached the server, so its highlight is not trustworthy.
     setLastMove(null)
     setPhase('starting')
-    run((signal) => getGame(game.game_id, signal), piecesById(board))
+    void run((signal) => getGame(game.game_id, signal), piecesById(board))
   }
 
   /**
@@ -201,7 +202,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
   const resign = () => {
     if (!game) return
     setSelected(null)
-    run((signal) => resignGame(game.game_id, signal), piecesById(board))
+    void run((signal) => resignGame(game.game_id, signal), piecesById(board))
   }
 
   const outcome: Outcome | null = game ? outcomeFor(game.status, game.human_color) : null
