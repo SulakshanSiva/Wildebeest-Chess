@@ -41,6 +41,28 @@ jobs:
       - name: Tests
         run: uv run --no-sync pytest --cov=backend --cov-report=xml
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci installs exactly what package-lock.json pins, and --ignore-scripts
+      # refuses package install scripts, as --no-build does for the Python install.
+      - name: Install frontend
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # Jest writes lcov paths relative to frontend/; Sonar resolves them from the
+      # repository root, so they are rewritten to frontend/src/... before the scan.
+      - name: Frontend tests
+        working-directory: frontend
+        env:
+          CI: "true"
+        run: |
+          npx react-scripts test --watchAll=false --coverage
+          sed -i 's|^SF:src/|SF:frontend/src/|' coverage/lcov.info
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5
         env:

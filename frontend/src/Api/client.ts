@@ -24,6 +24,24 @@ export class ApiError extends Error {
   }
 }
 
+// The backend makes game ids with uuid4().hex: exactly 32 lowercase hex characters.
+const GAME_ID_PATTERN = /^[0-9a-f]{32}$/
+
+/**
+ * Builds the path for one game, refusing any id that is not a real game id.
+ *
+ * The id comes from a server response. Checking it against the exact id format means even a
+ * tampered response cannot steer a request to another route, for example with "..".
+ *
+ * @param gameId The game's id, as the backend sent it.
+ * @param action The route under the game, such as "/moves", or nothing for the game itself.
+ * @returns The path, for example "/games/3f2a…/moves".
+ */
+export const gamePath = (gameId: string, action = '') => {
+  if (!GAME_ID_PATTERN.test(gameId)) throw new Error('The server sent an invalid game id.')
+  return `/games/${gameId}${action}`
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST'
   body?: unknown
@@ -72,7 +90,7 @@ export const createGame = (side: Side, signal?: AbortSignal) =>
  * @returns The game.
  */
 export const getGame = (gameId: string, signal?: AbortSignal) =>
-  request(`/games/${encodeURIComponent(gameId)}`, { signal })
+  request(gamePath(gameId), { signal })
 
 /**
  * Plays the person's move. The AI replies within the same request.
@@ -83,7 +101,7 @@ export const getGame = (gameId: string, signal?: AbortSignal) =>
  * @returns The game after the person's move and the AI's reply.
  */
 export const submitMove = (game: GameResponse, move: Move, signal?: AbortSignal) =>
-  request(`/games/${encodeURIComponent(game.game_id)}/moves`, {
+  request(gamePath(game.game_id, '/moves'), {
     method: 'POST',
     body: {
       origin: move.origin,
@@ -103,4 +121,4 @@ export const submitMove = (game: GameResponse, move: Move, signal?: AbortSignal)
  * @returns The finished game.
  */
 export const resignGame = (gameId: string, signal?: AbortSignal) =>
-  request(`/games/${encodeURIComponent(gameId)}/resign`, { method: 'POST', signal })
+  request(gamePath(gameId, '/resign'), { method: 'POST', signal })

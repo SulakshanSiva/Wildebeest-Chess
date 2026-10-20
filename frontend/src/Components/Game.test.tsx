@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import React from 'react'
-import { createGame, resignGame, submitMove } from '../Api/client'
+import { createGame, getGame, resignGame, submitMove } from '../Api/client'
 import { GameResponse, Move } from '../Api/types'
 import { LAYOUT } from '../Data/layout'
 import { layoutToBoard } from '../Logic/board'
@@ -9,6 +9,7 @@ import Game from './Game'
 jest.mock('../Api/client', () => ({
   ...jest.requireActual('../Api/client'),
   createGame: jest.fn(),
+  getGame: jest.fn(),
   submitMove: jest.fn(),
   resignGame: jest.fn(),
 }))
@@ -121,4 +122,80 @@ describe('Game', () => {
     expect(await screen.findByRole('dialog', { name: 'You lose' })).toBeInTheDocument()
     expect(screen.getByText('You resigned the game.')).toBeInTheDocument()
   })
+
+  it('asks which move was meant when two end on the same square', async () => {
+    const step: Move = { actor: { row: 0, column: 8 }, origin: { row: 0, column: 8 }, destination: { row: 0, column: 9 }, action: 'move' }
+    const fling: Move = { actor: { row: 0, column: 8 }, origin: { row: 0, column: 7 }, destination: { row: 0, column: 9 }, action: 'fling' }
+    jest.mocked(createGame).mockResolvedValue(gameResponse({ legal_moves: [step, fling] }))
+    jest.mocked(submitMove).mockResolvedValue(gameResponse({ version: 2 }))
+    await renderGame()
+
+    fireEvent.click(screen.getByRole('button', { name: 'I1, white Catapult' }))
+    fireEvent.click(screen.getByRole('button', { name: 'J1, white Knight, possible move' }))
+
+    const choice = screen.getByRole('dialog', { name: 'Choose a move' })
+    expect(within(choice).getByRole('button', { name: 'Move the Catapult' })).toBeInTheDocument()
+    fireEvent.click(within(choice).getByRole('button', { name: 'Fling the Bishop with the Catapult' }))
+
+    expect(submitMove).toHaveBeenCalledWith(expect.anything(), fling, expect.anything())
+    expect(await screen.findByText('Your move')).toBeInTheDocument()
+  })
+
+  it('shows a removed piece in its bar and in the history', async () => {
+    const capture: Move = { ...pawnStep, destination: { row: 9, column: 1 }, action: 'capture' }
+    jest.mocked(createGame).mockResolvedValue(gameResponse({ legal_moves: [capture] }))
+    jest.mocked(submitMove).mockResolvedValue(
+      gameResponse({
+        version: 2,
+        turns: [
+          {
+            ply: 0,
+            side: 'white',
+            move: capture,
+            piece: { id: 13, kind: 'pawn' },
+            displaced: null,
+            // Id 24 is Black's B10 pawn in the starting layout.
+            captured: [{ id: 24, kind: 'pawn', cause: 'capture' }],
+            promoted: [],
+            transported: [],
+          },
+        ],
+      }),
+    )
+    await renderGame()
+
+    fireEvent.click(screen.getByRole('button', { name: 'B2, white Pawn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'B10, black Pawn, possible move' }))
+
+    const bar = await screen.findByRole('complementary', { name: 'Your captures' })
+    expect(await within(bar).findByTitle('Pawn')).toBeInTheDocument()
+    expect(screen.getByText('Captured the AI’s Pawn')).toBeInTheDocument()
+  })
+
+  it('offers a retry when the server cannot be reached, and recovers', async () => {
+    jest.mocked(createGame).mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    render(<Game side='white' onExit={jest.fn()} onPlayAgain={jest.fn()} onShowRules={jest.fn()} />)
+
+    expect(await screen.findByText('Could not reach the game server. Is the backend running?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Your move')).toBeInTheDocument()
+    expect(createGame).toHaveBeenCalledTimes(2)
+  })
+
+  it('fetches the game again after a failed move', async () => {
+    jest.mocked(submitMove).mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    jest.mocked(getGame).mockResolvedValue(gameResponse({ version: 0 }))
+    await renderGame()
+
+    fireEvent.click(screen.getByRole('button', { name: 'B2, white Pawn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'B3, possible move' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Your move')).toBeInTheDocument()
+    expect(getGame).toHaveBeenCalledWith('g1', expect.anything())
+    // The failed move was undone: the pawn is back where it started.
+    expect(screen.getByRole('button', { name: 'B2, white Pawn' })).toBeInTheDocument()
+  })
 })
+

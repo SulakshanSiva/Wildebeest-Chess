@@ -87,6 +87,14 @@ uv run pytest
 
 `pytest` reports a test count and a coverage file, `coverage.xml`, that SonarCloud reads.
 
+Continuous integration then runs the frontend tests, which write `frontend/coverage/lcov.info`
+for SonarCloud too:
+
+```bash
+cd frontend
+CI=true npx react-scripts test --watchAll=false --coverage
+```
+
 ## Playing a game through the API
 
 Start a game. `human_color` is `white` or `black`; as Black, the computer's first move is
