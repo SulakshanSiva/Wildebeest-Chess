@@ -16,7 +16,7 @@ interface CapturedBarProps {
  * @param pieces The captured pieces.
  * @param placement Which side of the board the bar sits on.
  */
-const CapturedBar = ({ title, pieces, placement }: CapturedBarProps) => (
+const CapturedBar = ({ title, pieces, placement }: Readonly<CapturedBarProps>) => (
   <aside className={`captured captured--${placement}`} aria-label={title}>
     <h2 className='captured__title'>{title}</h2>
     {pieces.length === 0 ? (

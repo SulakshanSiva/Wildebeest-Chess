@@ -15,7 +15,6 @@ export const LAYOUT = [
 
 export const TRANSPORTER_CHAR = '*'
 export const JET_PACK_CHAR = '#'
-export const EMPTY_CHAR = '.'
 
 // Board files are lettered from the left; ranks are numbered from White's side.
 export const FILES = 'ABCDEFGHIJK'

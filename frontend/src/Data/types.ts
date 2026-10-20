@@ -1,7 +1,10 @@
+import { Terrain } from '../Api/types'
+
 export type Side = 'white' | 'black'
 
 export interface PieceInfo {
   symbol: string
+  kind: string
   name: string
   glyph: string
   classic?: boolean
@@ -10,6 +13,7 @@ export interface PieceInfo {
 }
 
 export interface TerrainInfo {
+  terrain: Terrain
   name: string
   glyph: string
   description: string

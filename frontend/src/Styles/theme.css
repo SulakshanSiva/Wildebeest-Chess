@@ -16,4 +16,10 @@
   --piece-black-ink: rgb(var(--color-cream));
   --piece-black-ring: rgb(var(--color-gold) / 0.55);
   --shadow-strong: rgba(31, 18, 8, 0.28);
+
+  /* Board highlights */
+  --highlight-selected: rgb(var(--color-cream) / 0.9);
+  --highlight-last-move: rgb(var(--color-gold-light) / 0.45);
+  --target-marker: rgb(var(--color-felt) / 0.55);
+  --target-capture-ring: rgb(196 64 52 / 0.85);
 }

@@ -9,7 +9,7 @@ interface ScreenProps {
  *
  * @param children The screen's content.
  */
-const Screen = ({ children }: ScreenProps) => (
+const Screen = ({ children }: Readonly<ScreenProps>) => (
   <main className='menu min-h-screen overflow-hidden bg-felt text-white'>
     <div className='menu__board' aria-hidden='true' />
     <div className='menu__overlay' aria-hidden='true' />

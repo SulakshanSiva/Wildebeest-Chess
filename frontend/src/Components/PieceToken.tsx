@@ -10,7 +10,7 @@ interface PieceTokenProps {
  *
  * @param symbol The piece's board letter; its case gives the colour.
  */
-const PieceToken = ({ symbol }: PieceTokenProps) => {
+const PieceToken = ({ symbol }: Readonly<PieceTokenProps>) => {
   const piece = pieceForSymbol(symbol)
   if (!piece) return null
 

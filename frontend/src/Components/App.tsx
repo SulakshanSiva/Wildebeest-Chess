@@ -25,8 +25,10 @@ function App() {
       {stage.name === 'game' && (
         <Game
           side={stage.side}
-          onResign={() => setStage({ name: 'menu' })}
-          onShowRules={() => setShowRules(true)}        />
+          onExit={() => setStage({ name: 'menu' })}
+          onPlayAgain={() => setStage({ name: 'colour' })}
+          onShowRules={() => setShowRules(true)}
+        />
       )}
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </>

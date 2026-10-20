@@ -2,14 +2,11 @@
 
 # About
 
-Wildebeest Chess is a chess game with custom pieces. The goal of this project is to create a website where a user can play against
-an AI opponent and play a game of chess.
+Wildebeest Chess is a chess game with custom pieces. The goal of this project is to create a website where a user can play against an AI opponent and play a game of chess.
 
 ## Frontend
 
 All frontend code exists in the /frontend folder.
-
-Currently, we are not focused on developing a UI.
 
 To run the frontend, use the following command in the frontend directory.
 
@@ -78,3 +75,8 @@ violation fails CI instead of relying on a reviewer to notice it.
 ### Git
 
 - NEVER git commit or push work at your own discretion
+
+### Manual Testing
+
+- When testing, run the frontend and backend servers yourself
+- Always stop all servers, both frontend and backend, after you have completed testing

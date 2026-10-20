@@ -15,7 +15,7 @@ const KING_GLYPH = PIECES.find((piece) => piece.symbol === 'K')?.glyph
  *
  * @param onChoose Called with the colour the player picked.
  */
-const ColourSelect = ({ onChoose }: ColourSelectProps) => (
+const ColourSelect = ({ onChoose }: Readonly<ColourSelectProps>) => (
   <Screen>
     <section className='menu__content px-6 text-center'>
       <p className='mb-4 text-xs font-semibold uppercase tracking-[0.45em] text-gold sm:text-sm'>

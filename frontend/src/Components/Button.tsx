@@ -12,7 +12,7 @@ const BASE =
  *
  * @param className Extra classes for sizing and positioning.
  */
-const Button = ({ className = '', type = 'button', ...rest }: ButtonProps) => (
+const Button = ({ className = '', type = 'button', ...rest }: Readonly<ButtonProps>) => (
   <button type={type} className={`${BASE} ${className}`} {...rest} />
 )
 

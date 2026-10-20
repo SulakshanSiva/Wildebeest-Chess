@@ -14,7 +14,7 @@ interface MenuProps {
  * @param onPlay Called when Play is clicked.
  * @param onRules Called when Rules is clicked.
  */
-const Menu = ({ onPlay, onRules }: MenuProps) => (
+const Menu = ({ onPlay, onRules }: Readonly<MenuProps>) => (
   <Screen>
     <section className='menu__content px-6 text-center'>
       <p className='mb-4 text-xs font-semibold uppercase tracking-[0.45em] text-gold sm:text-sm'>

@@ -91,7 +91,7 @@ body,
   color: var(--piece-black-ink);
 }
 
-/* Rules popup */
+/* Popups. The backdrop is a full-screen button behind the panel, so a click outside closes it */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -100,11 +100,96 @@ body,
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: rgba(7, 20, 14, 0.78);
 }
 
-.modal {
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+.modal-backdrop__dismiss {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(7, 20, 14, 0.78);
+  cursor: default;
+}
+
+/* Resets the browser's own <dialog> styles. In the components layer so Tailwind classes on a popup win */
+@layer components {
+  .modal {
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgb(var(--color-gold-light));
+    border-radius: 1rem;
+    background: rgb(var(--color-felt));
+    color: rgb(var(--color-cream));
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: modal-in 160ms ease-out both;
+  }
+
+  .modal:focus {
+    outline: none;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+
+/* Turn indicator above the board */
+.turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgb(var(--color-gold) / 0.6);
+  border-radius: 9999px;
+  background: rgb(var(--color-felt) / 0.85);
+  color: rgb(var(--color-cream));
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.turn--yourTurn {
+  border-color: rgb(var(--color-gold-light));
+  background: rgb(var(--color-gold));
+  color: rgb(var(--color-ink));
+}
+
+.turn--aiThinking {
+  animation: turn-pulse 1.2s ease-in-out infinite;
+}
+
+.turn--error {
+  border-color: var(--target-capture-ring);
+}
+
+.turn__spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid rgb(var(--color-gold) / 0.3);
+  border-top-color: rgb(var(--color-gold-light));
+  border-radius: 9999px;
+  animation: spin 0.8s linear infinite;
+}
+
+.turn__retry {
+  text-decoration: underline;
+  color: rgb(var(--color-gold-light));
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes turn-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgb(var(--color-gold) / 0.15);
+  }
 }
 
 /* Game screen: bars | board | bars. The board takes whatever width and height are left so it always fits */
@@ -175,7 +260,54 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  border: 0;
   container-type: size;
+}
+
+.game__square:disabled {
+  cursor: default;
+}
+
+.game__board--waiting {
+  cursor: progress;
+}
+
+.game__square:focus-visible {
+  z-index: 1;
+  outline: 3px solid rgb(var(--color-cream));
+  outline-offset: -3px;
+}
+
+/* Tints sit in a pseudo-element under the piece, so they never cover it */
+.game__square--last-move::before,
+.game__square--selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.game__square--last-move::before {
+  background: var(--highlight-last-move);
+}
+
+.game__square--selected::before {
+  box-shadow: inset 0 0 0 4px var(--highlight-selected);
+}
+
+.game__square--capture-target::after {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border: 4px solid var(--target-capture-ring);
+  border-radius: 9999px;
+}
+
+.game__target-dot {
+  width: 30%;
+  height: 30%;
+  border-radius: 9999px;
+  background: var(--target-marker);
 }
 
 .game__square--light {
@@ -320,6 +452,12 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modal,
+  .turn--aiThinking,
+  .turn__spinner {
+    animation: none;
+  }
+
   .menu__content {
     animation: none;
   }

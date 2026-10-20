@@ -1,64 +1,90 @@
 import React from 'react'
+import { BoardCells, Move, Square } from '../Api/types'
 import { TEXT } from '../Data/content'
-import { EMPTY_CHAR, FILES, JET_PACK_CHAR, LAYOUT, TRANSPORTER_CHAR } from '../Data/layout'
-import { JET_PACK_GLYPH, TRANSPORTER_GLYPH, pieceForSymbol, sideOfSymbol } from '../Data/pieces'
+import { FILES } from '../Data/layout'
+import { pieceForSymbol, TERRAIN } from '../Data/pieces'
 import { Side } from '../Data/types'
+import { orientRows, sameSquare, squareKey, squareName } from '../Logic/board'
 import PieceToken from './PieceToken'
 
 interface BoardProps {
+  board: BoardCells
   side: Side
+  selected: Square | null
+  targets: Map<string, Move[]>
+  lastMove: Move | null
+  interactive: boolean
+  onSquareClick: (square: Square) => void
 }
 
-const TERRAIN_CHARS = [EMPTY_CHAR, TRANSPORTER_CHAR, JET_PACK_CHAR]
-
-/**
- * Gives the squares in display order with the player's side at the bottom.
- *
- * @param side The colour the player chose.
- * @returns Rows from top to bottom, each a list of squares with its layout character.
- */
-const buildRows = (side: Side) => {
-  const rows = LAYOUT.map((line, row) => line.split('').map((char, column) => ({ row, column, char })))
-  // Row 0 is White's back row, drawn at the bottom for White; Black sees the board turned round.
-  return side === 'white' ? [...rows].reverse() : rows.map((line) => [...line].reverse())
-}
+const TERRAIN_BY_NAME = new Map(TERRAIN.map((info) => [info.terrain, info]))
 
 /**
  * The 11x11 board with rank numbers on the left and file letters underneath.
  *
+ * Every square is a button. After a piece is selected, the squares it can reach are marked: a
+ * dot on an empty square, a ring on an occupied one.
+ *
+ * @param board The cells to draw, row 0 first.
  * @param side The colour the player chose; the board is oriented to it.
+ * @param selected The selected piece's square, if any.
+ * @param targets The selected piece's moves, keyed by destination square.
+ * @param lastMove The most recent move, whose squares are tinted.
+ * @param interactive Whether clicks are accepted, which is only on the player's turn.
+ * @param onSquareClick Called with the square that was clicked.
  */
-const Board = ({ side }: BoardProps) => {
-  const rows = buildRows(side)
+const Board = ({ board, side, selected, targets, lastMove, interactive, onSquareClick }: Readonly<BoardProps>) => {
+  const rows = orientRows(board, side)
 
   return (
     <div className='game__frame'>
       <div className='game__ranks' aria-hidden='true'>
         {rows.map((line) => (
-          <span key={line[0].row}>{line[0].row + 1}</span>
+          <span key={line[0].square.row}>{line[0].square.row + 1}</span>
         ))}
       </div>
-      <div className='game__board' role='grid' aria-label={TEXT.game.boardLabel}>
-        {rows.flat().map(({ row, column, char }) => {
-          const piece = TERRAIN_CHARS.includes(char) ? undefined : pieceForSymbol(char)
-          const square = `${FILES[column]}${row + 1}`
-          const shade = (row + column) % 2 === 0 ? 'dark' : 'light'
+      <div className={`game__board ${interactive ? '' : 'game__board--waiting'}`} role='group' aria-label={TEXT.game.boardLabel}>
+        {rows.flat().map(({ square, cell }) => {
+          const piece = cell.piece ? pieceForSymbol(cell.piece.symbol) : undefined
+          const terrain = TERRAIN_BY_NAME.get(cell.terrain)
+          const isTarget = targets.has(squareKey(square))
+          const isSelected = sameSquare(square, selected)
+          const isLastMove = lastMove !== null && (sameSquare(square, lastMove.origin) || sameSquare(square, lastMove.destination))
+
+          const classes = [
+            'game__square',
+            (square.row + square.column) % 2 === 0 ? 'game__square--dark' : 'game__square--light',
+            isSelected ? 'game__square--selected' : '',
+            isLastMove ? 'game__square--last-move' : '',
+            isTarget && cell.piece ? 'game__square--capture-target' : '',
+          ]
+          const description = [
+            squareName(square),
+            cell.piece && piece ? `${cell.piece.color} ${piece.name}` : '',
+            terrain?.name.toLowerCase() ?? '',
+            isSelected ? TEXT.game.selected : '',
+            isTarget ? TEXT.game.possibleMove : '',
+          ]
+
           return (
-            <div
-              key={square}
-              role='gridcell'
-              aria-label={piece ? `${square} ${sideOfSymbol(char)} ${piece.name}` : square}
-              className={`game__square game__square--${shade}`}
+            <button
+              key={squareKey(square)}
+              type='button'
+              disabled={!interactive}
+              aria-label={description.filter(Boolean).join(', ')}
+              aria-pressed={isSelected}
+              className={classes.filter(Boolean).join(' ')}
+              onClick={() => onSquareClick(square)}
             >
-              {char === TRANSPORTER_CHAR && <span className='game__terrain'>{TRANSPORTER_GLYPH}</span>}
-              {char === JET_PACK_CHAR && <span className='game__terrain'>{JET_PACK_GLYPH}</span>}
-              {piece && <PieceToken symbol={char} />}
-            </div>
+              {terrain && <span className='game__terrain'>{terrain.glyph}</span>}
+              {cell.piece && <PieceToken symbol={cell.piece.symbol} />}
+              {isTarget && !cell.piece && <span className='game__target-dot' />}
+            </button>
           )
         })}
       </div>
       <div className='game__files' aria-hidden='true'>
-        {rows[0].map((square) => (
+        {rows[0].map(({ square }) => (
           <span key={square.column}>{FILES[square.column]}</span>
         ))}
       </div>
