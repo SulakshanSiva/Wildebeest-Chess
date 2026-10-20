@@ -1,12 +1,22 @@
-import { Piece, Turn } from '../Api/types'
+import { Piece, PieceRef, Turn } from '../Api/types'
 import { addCaptures, NO_CAPTURES } from './captures'
 
-const turn = (side: Turn['side'], captured: Turn['captured']): Turn => ({
+/**
+ * Builds a turn that removed the given pieces by capture.
+ *
+ * @param side The side that moved.
+ * @param captured The removed pieces, as id and kind.
+ * @returns The turn.
+ */
+const turn = (side: Turn['side'], captured: PieceRef[]): Turn => ({
   ply: 0,
   side,
   move: { actor: { row: 0, column: 0 }, origin: { row: 0, column: 0 }, destination: { row: 1, column: 0 }, action: 'capture' },
-  captured,
+  piece: { id: 1, kind: 'rook' },
+  displaced: null,
+  captured: captured.map((removed) => ({ ...removed, cause: 'capture' })),
   promoted: [],
+  transported: [],
 })
 
 describe('addCaptures', () => {

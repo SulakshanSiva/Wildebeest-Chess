@@ -121,6 +121,31 @@ class PieceRefSchema(BaseModel):
     kind: str
 
 
+class RemovedPieceSchema(PieceRefSchema):
+    """
+    A piece removed during a turn, and why.
+
+    Attributes:
+        cause: "capture", "crush" or "fling" when the move itself removed it;
+            "poison", "rampage" or "explosion" when an after-effect did.
+    """
+
+    cause: str
+
+
+class TransportSchema(PieceRefSchema):
+    """
+    A piece a transporter pad carried during a turn.
+
+    Attributes:
+        origin: The pad it left.
+        destination: The pad it arrived on.
+    """
+
+    origin: SquareSchema
+    destination: SquareSchema
+
+
 class TurnSchema(BaseModel):
     """
     One turn that was played, after-effects included.
@@ -129,15 +154,22 @@ class TurnSchema(BaseModel):
         ply: Zero-based index of the turn in the game.
         side: The colour that moved.
         move: The move played.
+        piece: The piece that travelled from origin to destination. For a fling
+            this is the flung piece, not the Catapult.
+        displaced: The piece a Gorilla pushed, or null.
         captured: Every piece removed during the turn, by any cause.
         promoted: Every piece that changed kind during the turn.
+        transported: Every piece a transporter pad carried during the turn.
     """
 
     ply: int
     side: ColorName
     move: MoveSchema
-    captured: list[PieceRefSchema]
+    piece: PieceRefSchema
+    displaced: PieceRefSchema | None
+    captured: list[RemovedPieceSchema]
     promoted: list[PieceRefSchema]
+    transported: list[TransportSchema]
 
 
 class GameResponse(BaseModel):

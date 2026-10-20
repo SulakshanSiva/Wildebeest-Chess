@@ -75,6 +75,25 @@ describe('Game', () => {
     expect(screen.getByText('Your move')).toBeInTheDocument()
   })
 
+  it('adds each played turn to the history', async () => {
+    jest.mocked(submitMove).mockResolvedValue(
+      gameResponse({
+        version: 2,
+        turns: [
+          { ply: 0, side: 'white', move: pawnStep, piece: { id: 13, kind: 'pawn' }, displaced: null, captured: [], promoted: [], transported: [] },
+        ],
+      }),
+    )
+    await renderGame()
+    expect(screen.getByText('No moves yet')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'B2, white Pawn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'B3, possible move' }))
+
+    const history = await screen.findByRole('complementary', { name: 'History' })
+    expect(await within(history).findByText('Pawn B2 → B3')).toBeInTheDocument()
+  })
+
   it('announces a win at the end of the game', async () => {
     jest.mocked(submitMove).mockResolvedValue(
       gameResponse({ status: 'white_wins', end_reason: 'king_captured', legal_moves: [] }),

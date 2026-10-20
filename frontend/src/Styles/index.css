@@ -192,10 +192,12 @@ body,
   }
 }
 
-/* Game screen: bars | board | bars. The board takes whatever width and height are left so it always fits */
+/* Game screen: history | bars | board | bars on wide screens, history underneath otherwise.
+   The board takes whatever width and height are left so it always fits */
 .game {
   --label-size: 1.75rem;
   --bar-width: 5.5rem;
+  --history-width: 16rem;
   --layout-gap: 1rem;
   --board-size: min(
     calc(100vw - 2 * var(--bar-width) - 2 * var(--layout-gap) - var(--label-size) - 2rem),
@@ -207,7 +209,9 @@ body,
 .game__layout {
   display: grid;
   grid-template-columns: var(--bar-width) auto var(--bar-width);
-  grid-template-areas: 'left board right';
+  grid-template-areas:
+    'left board right'
+    'history history history';
   gap: var(--layout-gap);
   justify-content: center;
   align-items: start;
@@ -409,6 +413,124 @@ body,
   container-type: size;
 }
 
+/* Move history panel, styled like the capture bars */
+.history {
+  grid-area: history;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  max-height: 14rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgb(var(--color-gold) / 0.5);
+  border-radius: 0.75rem;
+  background: rgb(var(--color-felt) / 0.85);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  color: rgb(var(--color-cream));
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.history__entry {
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.5rem;
+  background: rgb(var(--color-felt-raised) / 0.7);
+}
+
+.history__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.history__number {
+  min-width: 1.4rem;
+  color: rgb(var(--color-gold));
+  font-family: 'Cinzel', serif;
+}
+
+/* A small pill in the mover's colour, so whose turn it was reads at a glance */
+.history__who {
+  flex: none;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.history__entry--white .history__who {
+  background: var(--piece-white-fill);
+  color: var(--piece-white-ink);
+}
+
+.history__entry--black .history__who {
+  background: var(--piece-black-fill);
+  color: var(--piece-black-ink);
+  outline: 1px solid var(--piece-black-ring);
+}
+
+.history__events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.25rem;
+  padding-left: 1.8rem;
+  color: rgb(var(--color-cream) / 0.85);
+}
+
+.history__event {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.history__icon {
+  flex: none;
+  width: 1rem;
+  text-align: center;
+  color: var(--history-special);
+}
+
+.history__event--capture .history__icon,
+.history__event--crush .history__icon,
+.history__event--poison .history__icon,
+.history__event--rampage .history__icon,
+.history__event--explosion .history__icon {
+  color: var(--history-danger);
+}
+
+/* Wide screens have room for the history beside the board, as tall as the board */
+@media (min-width: 1200px) {
+  .game {
+    --board-size: min(
+      calc(
+        100vw - var(--history-width) - 2 * var(--bar-width) - 3 * var(--layout-gap) - var(--label-size) - 2rem
+      ),
+      calc(100vh - 10rem),
+      46rem
+    );
+  }
+
+  .game__layout {
+    grid-template-columns: var(--history-width) var(--bar-width) auto var(--bar-width);
+    grid-template-areas: 'history left board right';
+  }
+
+  .history {
+    height: var(--board-size);
+    max-height: none;
+  }
+}
+
 /* Phones have no room beside the board, so the bars become strips above and below it */
 @media (max-width: 767px) {
   .game {
@@ -418,7 +540,7 @@ body,
 
   .game__layout {
     grid-template-columns: auto;
-    grid-template-areas: 'left' 'board' 'right';
+    grid-template-areas: 'left' 'board' 'right' 'history';
   }
 
   .captured {

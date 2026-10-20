@@ -23,6 +23,20 @@ export const piecesById = (board: BoardCells) => {
 }
 
 /**
+ * Combines two piece indexes, preferring the first wherever both know a piece.
+ *
+ * @param preferred Pieces to trust first, such as the board before a request.
+ * @param fallback Pieces to fill gaps with, such as the board after it.
+ * @returns A new index holding every piece from both.
+ */
+export const mergePieces = (preferred: Map<number, Piece>, fallback: Map<number, Piece>) => {
+  const merged = new Map<number, Piece>()
+  fallback.forEach((piece, id) => merged.set(id, piece))
+  preferred.forEach((piece, id) => merged.set(id, piece))
+  return merged
+}
+
+/**
  * Adds the pieces removed during some turns to the running list.
  *
  * The backend names a removed piece only by id and kind, so its colour is looked up on the

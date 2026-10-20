@@ -97,6 +97,26 @@ def test_making_a_move_returns_both_turns(client: TestClient) -> None:
     assert body["board"][2][2]["piece"]["kind"] == "knight"
 
 
+def test_a_turn_names_the_moving_piece_and_its_effects(client: TestClient) -> None:
+    """
+    Carry what the move history needs: the piece that moved, and every effect.
+
+    Arguments:
+        client: Client for the test application.
+    """
+    game = _new_game(client)
+
+    body = client.post(
+        f"{GAMES}/{game['game_id']}/moves", json={**KNIGHT_MOVE, "expected_version": 0}
+    ).json()
+
+    turn = body["turns"][0]
+    assert turn["piece"] == {"id": game["board"][0][1]["piece"]["id"], "kind": "knight"}
+    assert turn["displaced"] is None
+    assert turn["captured"] == []
+    assert turn["transported"] == []
+
+
 def test_a_game_can_be_fetched_after_a_move(client: TestClient) -> None:
     """
     Return the stored game, as a reloaded page would need.

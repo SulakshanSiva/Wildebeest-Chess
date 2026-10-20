@@ -6,7 +6,8 @@ import { LAYOUT } from '../Data/layout'
 import { AI_MIN_THINKING_MS } from '../Data/settings'
 import { Side } from '../Data/types'
 import { applyMoveLocally, layoutToBoard, sameSquare, squareKey } from '../Logic/board'
-import { addCaptures, CapturedBySide, NO_CAPTURES, piecesById } from '../Logic/captures'
+import { addCaptures, CapturedBySide, mergePieces, NO_CAPTURES, piecesById } from '../Logic/captures'
+import { describeTurn, HistoryEntry } from '../Logic/history'
 import { groupByDestination, movesFor } from '../Logic/moves'
 import { Outcome, outcomeFor } from '../Logic/outcome'
 
@@ -71,6 +72,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
   const [captured, setCaptured] = useState<CapturedBySide>(NO_CAPTURES)
   const [error, setError] = useState<string | null>(null)
   const [choices, setChoices] = useState<Move[] | null>(null)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
   const inFlight = useRef<AbortController | null>(null)
 
   /**
@@ -92,9 +94,15 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
         if (response.turns.some((turn) => turn.side !== response.human_color)) {
           await wait(minThinkingMs - (Date.now() - startedAt), controller.signal)
         }
+        // Pieces from before the request win; the new board fills in any the old one lacked.
+        const lookup = mergePieces(known, piecesById(response.board))
         setGame(response)
         setBoard(response.board)
-        setCaptured((current) => addCaptures(current, response.turns, known))
+        setCaptured((current) => addCaptures(current, response.turns, lookup))
+        setHistory((current) => [
+          ...current,
+          ...response.turns.map((turn) => describeTurn(turn, lookup, response.human_color)),
+        ])
         const latest = response.turns.at(-1)
         if (latest) setLastMove(latest.move)
         setPhase(phaseAfter(response))
@@ -118,6 +126,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     setSelected(null)
     setLastMove(null)
     setCaptured(NO_CAPTURES)
+    setHistory([])
     setChoices(null)
     setError(null)
     setPhase(firstPhase(side))
@@ -204,6 +213,7 @@ export const useGame = (side: Side, minThinkingMs = AI_MIN_THINKING_MS) => {
     targets,
     lastMove,
     captured,
+    history,
     error,
     outcome,
     endReason: game?.end_reason ?? null,

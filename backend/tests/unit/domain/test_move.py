@@ -168,7 +168,9 @@ def test_move_record_defaults_to_no_captures_at_the_first_ply() -> None:
     """
     Record an applied move with what it removed, so it can be undone later.
     """
-    record = MoveRecord(move=_quiet_move(), moved_piece_id=3, side=Color.WHITE)
+    record = MoveRecord(
+        move=_quiet_move(), moved_piece_id=3, side=Color.WHITE, moved=(3, PieceKind.ROOK)
+    )
 
     assert record.captured == ()
     assert record.ply == 0
@@ -183,6 +185,7 @@ def test_move_record_remembers_captured_pieces_by_identity() -> None:
         move=_capture_move(),
         moved_piece_id=3,
         side=Color.BLACK,
+        moved=(3, PieceKind.ROOK),
         captured=((9, PieceKind.GORILLA),),
         ply=7,
     )

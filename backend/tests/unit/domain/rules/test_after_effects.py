@@ -6,7 +6,9 @@ import pytest
 
 from backend.domain.board import Board, BoardDimensions
 from backend.domain.coordinates import Coordinate
-from backend.domain.enums import Color, GameStatus, PieceKind
+from backend.domain.enums import Color, GameStatus, PieceKind, RemovalCause
+from backend.domain.move import Transport
+from backend.domain.pieces.registry import create_piece
 from backend.domain.rules.after_effects import (
     apply_golf_cart_rampage,
     apply_joey_explosions,
@@ -544,3 +546,44 @@ def test_a_newly_promoted_grand_empress_does_not_poison_in_the_same_phase(
 
     assert result.require_piece_at(Coordinate(2, 4)).kind is PieceKind.GRAND_EMPRESS
     assert result.piece_at(bystander) is not None
+
+
+def test_the_report_names_the_phase_behind_each_removal(
+    empty_board: Board, place: Callable[..., Board]
+) -> None:
+    """
+    Tag a poisoned piece with the poison phase, for the move history.
+
+    Arguments:
+        empty_board: An unobstructed 5x5 board.
+        place: Helper that builds and places a piece.
+    """
+    board = place(empty_board, Coordinate(2, 2), PieceKind.SERPENT, Color.WHITE)
+    board = place(board, Coordinate(2, 3), PieceKind.PAWN, Color.BLACK)
+
+    report = run_after_effects(board, {})
+
+    victim = next(piece_id for piece_id, _ in report.removed)
+    assert report.causes == ((victim, RemovalCause.POISON),)
+
+
+def test_the_report_records_each_transporter_journey() -> None:
+    """
+    List the piece a pad carried and both pads, before the board forgets them.
+    """
+    board = (
+        Variant()
+        .build_board()
+        .with_piece(Coordinate(3, 1), create_piece(900, PieceKind.ROOK, Color.WHITE))
+    )
+
+    report = run_after_effects(board, WILDEBEEST_TRANSPORTER_LINKS)
+
+    assert report.transported == (
+        Transport(
+            piece_id=900,
+            kind=PieceKind.ROOK,
+            origin=Coordinate(3, 1),
+            destination=Coordinate(7, 9),
+        ),
+    )

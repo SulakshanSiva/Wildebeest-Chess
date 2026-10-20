@@ -4,7 +4,7 @@ from ..application.game_service import GameView
 from ..domain.board import Board, Cell
 from ..domain.coordinates import Coordinate
 from ..domain.enums import Color, PieceKind
-from ..domain.move import Move, MoveRecord
+from ..domain.move import Move, MoveRecord, Transport
 from ..domain.pieces.registry import symbol_for
 from .schemas.games import (
     CellSchema,
@@ -13,7 +13,9 @@ from .schemas.games import (
     MoveSchema,
     PieceRefSchema,
     PieceSchema,
+    RemovedPieceSchema,
     SquareSchema,
+    TransportSchema,
     TurnSchema,
 )
 
@@ -161,12 +163,37 @@ def _turn(record: MoveRecord) -> TurnSchema:
     Returns:
         The move and everything it caused.
     """
+    causes = dict(record.causes)
     return TurnSchema(
         ply=record.ply,
         side=_color_name(record.side),
         move=_move(record.move),
-        captured=[_piece_ref(piece_id, kind) for piece_id, kind in record.captured],
+        piece=_piece_ref(*record.moved),
+        displaced=None if record.displaced is None else _piece_ref(*record.displaced),
+        captured=[
+            RemovedPieceSchema(id=piece_id, kind=kind.value, cause=causes[piece_id].name.lower())
+            for piece_id, kind in record.captured
+        ],
         promoted=[_piece_ref(piece_id, kind) for piece_id, kind in record.promoted],
+        transported=[_transport(journey) for journey in record.transported],
+    )
+
+
+def _transport(journey: Transport) -> TransportSchema:
+    """
+    Describe one transporter journey for the client.
+
+    Arguments:
+        journey: The piece carried and the pads it moved between.
+
+    Returns:
+        The journey.
+    """
+    return TransportSchema(
+        id=journey.piece_id,
+        kind=journey.kind.value,
+        origin=_square(journey.origin),
+        destination=_square(journey.destination),
     )
 
 

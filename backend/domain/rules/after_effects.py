@@ -4,10 +4,11 @@ from dataclasses import dataclass, replace
 
 from ..board import Board
 from ..coordinates import ALL_DIRECTIONS, Coordinate
-from ..enums import Color, PieceKind, Terrain
+from ..enums import Color, PieceKind, RemovalCause, Terrain
+from ..move import Transport
 from ..pieces.base import Piece
 from ..pieces.registry import build_rule
-from .terrain import TransporterLinks, apply_transporters, jet_pack_landing
+from .terrain import TransporterLinks, apply_transporters, jet_pack_landing, planned_transports
 
 IMMUNE_TO_POISON = (PieceKind.GOLF_CART, PieceKind.TIME_MACHINE)
 JOEY_EXPLOSION_DIVISOR = 5
@@ -23,11 +24,15 @@ class AfterEffectReport:
         board: The board after every phase has run.
         removed: Identity and kind of each piece removed, in phase order.
         promoted: Identity and new kind of each piece that changed kind.
+        causes: Which phase removed each piece, by id.
+        transported: Every piece a transporter pad carried.
     """
 
     board: Board
     removed: tuple[tuple[int, PieceKind], ...] = ()
     promoted: tuple[tuple[int, PieceKind], ...] = ()
+    causes: tuple[tuple[int, RemovalCause], ...] = ()
+    transported: tuple[Transport, ...] = ()
 
 
 def _without(board: Board, squares: set[Coordinate]) -> Board:
@@ -348,9 +353,11 @@ def run_after_effects(board: Board, links: TransporterLinks) -> AfterEffectRepor
     """
     removed: list[tuple[int, PieceKind]] = []
     promoted: list[tuple[int, PieceKind]] = []
+    causes: list[tuple[int, RemovalCause]] = []
 
     board, poisoned, empresses = apply_poisoning(board)
     removed.extend(poisoned)
+    causes.extend((piece_id, RemovalCause.POISON) for piece_id, _ in poisoned)
     promoted.extend(empresses)
 
     board, promotions = apply_promotion(board)
@@ -358,10 +365,20 @@ def run_after_effects(board: Board, links: TransporterLinks) -> AfterEffectRepor
 
     board, rampaged = apply_golf_cart_rampage(board)
     removed.extend(rampaged)
+    causes.extend((piece_id, RemovalCause.RAMPAGE) for piece_id, _ in rampaged)
 
+    # Recorded before moving, since afterwards the pads no longer show who came from where.
+    transported = planned_transports(board, links)
     board = apply_transporters(board, links)
 
     board, exploded = apply_joey_explosions(board)
     removed.extend(exploded)
+    causes.extend((piece_id, RemovalCause.EXPLOSION) for piece_id, _ in exploded)
 
-    return AfterEffectReport(board=board, removed=tuple(removed), promoted=tuple(promoted))
+    return AfterEffectReport(
+        board=board,
+        removed=tuple(removed),
+        promoted=tuple(promoted),
+        causes=tuple(causes),
+        transported=transported,
+    )

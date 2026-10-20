@@ -6,7 +6,7 @@ import pytest
 
 from backend.domain.board import Board, BoardDimensions
 from backend.domain.coordinates import Coordinate
-from backend.domain.enums import Color, EndReason, GameStatus, PieceKind
+from backend.domain.enums import Color, EndReason, GameStatus, PieceKind, RemovalCause
 from backend.domain.errors import (
     GameOverError,
     IllegalMoveError,
@@ -335,3 +335,101 @@ def test_random_games_keep_every_invariant(seed: int) -> None:
             assert game.end_reason is not None
             assert game.legal_moves() == ()
             break
+
+
+def test_a_record_names_the_capturing_piece_and_the_cause() -> None:
+    """
+    Record which piece moved and that its victim fell to a capture.
+    """
+    white = _two_kings_game([(Coordinate(10, 5), PieceKind.ROOK, Color.WHITE)])
+
+    won = white.apply_move(white.find_move(Coordinate(10, 5), Coordinate(10, 10)))
+
+    record = won.history[0]
+    assert record.moved == (3, PieceKind.ROOK)
+    assert record.displaced is None
+    assert record.causes == ((2, RemovalCause.CAPTURE),)
+
+
+def test_a_record_names_the_piece_a_gorilla_pushed() -> None:
+    """
+    Keep the shoved piece, which the move alone does not identify.
+    """
+    game = _two_kings_game(
+        [
+            (Coordinate(5, 5), PieceKind.GORILLA, Color.WHITE),
+            (Coordinate(5, 6), PieceKind.PAWN, Color.BLACK),
+        ]
+    )
+
+    after = game.apply_move(game.find_move(Coordinate(5, 5), Coordinate(5, 6)))
+
+    assert after.history[0].moved == (3, PieceKind.GORILLA)
+    assert after.history[0].displaced == (4, PieceKind.PAWN)
+    assert after.history[0].captured == ()
+
+
+def test_a_fling_records_the_flung_piece_as_the_one_that_moved() -> None:
+    """
+    Name the passenger, not the Catapult that spent the turn.
+    """
+    game = _two_kings_game(
+        [
+            (Coordinate(5, 5), PieceKind.CATAPULT, Color.WHITE),
+            (Coordinate(5, 4), PieceKind.KNIGHT, Color.WHITE),
+        ]
+    )
+    fling = game.find_move(Coordinate(5, 4), Coordinate(5, 8), actor=Coordinate(5, 5))
+
+    record = game.apply_move(fling).history[0]
+
+    assert record.moved_piece_id == 3
+    assert record.moved == (4, PieceKind.KNIGHT)
+
+
+def test_an_explosion_is_recorded_as_the_cause() -> None:
+    """
+    Attribute after-effect removals to their phase, not to the move.
+    """
+    game = _custom_game(
+        [
+            (Coordinate(5, 4), PieceKind.JOEY, Color.WHITE),
+            (Coordinate(4, 4), PieceKind.KING, Color.WHITE),
+            (Coordinate(4, 5), PieceKind.KING, Color.BLACK),
+            (Coordinate(5, 0), PieceKind.ROOK, Color.WHITE),
+            (Coordinate(5, 5), PieceKind.PAWN, Color.BLACK),
+            (Coordinate(5, 8), PieceKind.PAWN, Color.BLACK),
+            (Coordinate(5, 10), PieceKind.PAWN, Color.BLACK),
+        ]
+    )
+
+    after = game.apply_move(game.find_move(Coordinate(5, 0), Coordinate(5, 1)))
+
+    record = after.history[0]
+    assert {piece_id for piece_id, _ in record.captured} == {1, 2, 3, 5}
+    assert {cause for _, cause in record.causes} == {RemovalCause.EXPLOSION}
+
+
+def test_a_transporter_journey_is_recorded() -> None:
+    """
+    Record a piece carried by a pad, which the board alone cannot show.
+    """
+    # The real board keeps its pads; every starting piece is cleared off it.
+    board = Variant().build_board()
+    for square, _ in list(board.pieces()):
+        board = board.without_piece(square)
+    board = board.with_piece(Coordinate(0, 0), create_piece(1, PieceKind.KING, Color.WHITE))
+    board = board.with_piece(Coordinate(10, 10), create_piece(2, PieceKind.KING, Color.BLACK))
+    board = board.with_piece(Coordinate(0, 1), create_piece(3, PieceKind.ROOK, Color.WHITE))
+    game = Game(
+        game_id="pads",
+        variant=Variant(),
+        position=Position(board=board, side_to_move=Color.WHITE),
+    )
+
+    record = game.apply_move(game.find_move(Coordinate(0, 1), Coordinate(3, 1))).history[0]
+
+    assert len(record.transported) == 1
+    journey = record.transported[0]
+    assert (journey.piece_id, journey.kind) == (3, PieceKind.ROOK)
+    assert (journey.origin, journey.destination) == (Coordinate(3, 1), Coordinate(7, 9))

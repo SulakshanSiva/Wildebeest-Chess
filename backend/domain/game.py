@@ -3,13 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from .coordinates import Coordinate
-from .enums import Color, EndReason, GameStatus
-from .errors import AmbiguousMoveError, GameOverError, IllegalMoveError, StaleVersionError
+from .enums import Color, EndReason, GameStatus, MoveAction, PieceKind, RemovalCause
+from .errors import (
+    AmbiguousMoveError,
+    GameOverError,
+    IllegalMoveError,
+    InvariantViolation,
+    StaleVersionError,
+)
 from .move import Move, MoveRecord
 from .position import Position
 from .rules.move_generator import legal_moves
 from .rules.turn import resolve_turn
 from .variant import Variant
+
+# The cause of a removal made by the move itself, before any after-effect runs.
+_MOVE_CAUSES: dict[MoveAction, RemovalCause] = {
+    MoveAction.CAPTURE: RemovalCause.CAPTURE,
+    MoveAction.CRUSH: RemovalCause.CRUSH,
+    MoveAction.FLING: RemovalCause.FLING,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +165,8 @@ class Game:
 
         before = self.position.board
         mover = before.require_piece_at(move.actor)
+        travelled = before.require_piece_at(move.origin)
+        pushed = before.piece_at(move.destination) if move.action is MoveAction.PUSH else None
         result = resolve_turn(self.position, move, self.variant.transporter_links)
 
         survivors = {piece.piece_id for _, piece in result.position.board.pieces()}
@@ -164,8 +179,12 @@ class Game:
             move=move,
             moved_piece_id=mover.piece_id,
             side=self.side_to_move,
+            moved=(travelled.piece_id, travelled.kind),
+            displaced=None if pushed is None else (pushed.piece_id, pushed.kind),
             captured=captured,
+            causes=_removal_causes(captured, move, dict(result.report.causes)),
             promoted=result.report.promoted,
+            transported=result.report.transported,
             ply=len(self.history),
         )
 
@@ -198,3 +217,31 @@ class Game:
             end_reason=EndReason.RESIGNATION,
             version=self.version + 1,
         )
+
+
+def _removal_causes(
+    captured: tuple[tuple[int, PieceKind], ...],
+    move: Move,
+    phase_causes: dict[int, RemovalCause],
+) -> tuple[tuple[int, RemovalCause], ...]:
+    """
+    Say why each piece removed during a turn left the board.
+
+    A piece no after-effect phase removed was removed by the move itself, so
+    its cause comes from the move's action.
+
+    Arguments:
+        captured: Every piece removed during the turn.
+        move: The move that started the turn.
+        phase_causes: The after-effect phase that removed each piece, by id.
+
+    Returns:
+        One cause per captured piece, in the same order.
+    """
+    causes = []
+    for piece_id, _ in captured:
+        cause = phase_causes.get(piece_id) or _MOVE_CAUSES.get(move.action)
+        if cause is None:
+            raise InvariantViolation(f"piece {piece_id} was removed by a {move.action.name} move")
+        causes.append((piece_id, cause))
+    return tuple(causes)

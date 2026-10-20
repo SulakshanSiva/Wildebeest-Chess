@@ -6,6 +6,7 @@ from ..board import Board
 from ..coordinates import Coordinate
 from ..enums import PieceKind, Terrain
 from ..errors import InvariantViolation
+from ..move import Transport
 from ..pieces.base import Piece
 from ..pieces.registry import build_rule
 
@@ -54,6 +55,28 @@ def occupied_pads(board: Board, links: TransporterLinks) -> TransporterLinks:
     return {
         source: target for source, target in links.items() if board.piece_at(source) is not None
     }
+
+
+def planned_transports(board: Board, links: TransporterLinks) -> tuple[Transport, ...]:
+    """
+    Describe the journeys apply_transporters is about to make, without making them.
+
+    Arguments:
+        board: The board about to be transported.
+        links: Every pad on this board and where it leads.
+
+    Returns:
+        One journey per occupied pad, in reading order of the pad left.
+    """
+    journeys = []
+    for source, target in sorted(
+        occupied_pads(board, links).items(), key=lambda item: (item[0].row, item[0].column)
+    ):
+        piece = board.require_piece_at(source)
+        journeys.append(
+            Transport(piece_id=piece.piece_id, kind=piece.kind, origin=source, destination=target)
+        )
+    return tuple(journeys)
 
 
 def apply_transporters(board: Board, links: TransporterLinks) -> Board:

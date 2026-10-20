@@ -8,6 +8,7 @@ import Board from './Board'
 import Button from './Button'
 import CapturedBar from './CapturedBar'
 import Dialog from './Dialog'
+import MoveHistory from './MoveHistory'
 import Screen from './Screen'
 import TurnIndicator from './TurnIndicator'
 
@@ -19,8 +20,8 @@ interface GameProps {
 }
 
 /**
- * The game screen: the board between the two capture bars, rules top left, resign top right,
- * and the popups for resigning, choosing between moves and the result.
+ * The game screen: the move history, the board between the two capture bars, rules top left,
+ * resign top right, and the popups for resigning, choosing between moves and the result.
  *
  * @param side The colour the player chose.
  * @param onExit Called to return to the main menu.
@@ -58,6 +59,7 @@ const Game = ({ side, onExit, onPlayAgain, onShowRules }: Readonly<GameProps>) =
       <section className='game px-2 pb-6 pt-20 sm:pt-16'>
         <TurnIndicator side={side} phase={game.phase} error={game.error} onRetry={game.retry} />
         <div className='game__layout'>
+          <MoveHistory entries={game.history} />
           <CapturedBar title={TEXT.game.aiCaptures} pieces={game.captured[side]} placement='left' />
           <Board
             board={game.board}

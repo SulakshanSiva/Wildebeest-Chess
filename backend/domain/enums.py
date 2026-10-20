@@ -158,6 +158,23 @@ class MoveAction(Enum):
     FLING = auto()
 
 
+class RemovalCause(Enum):
+    """
+    How a piece left the board during a turn.
+
+    The first three come from the move itself; the rest from the after-effect
+    phases, which can remove pieces of either colour. FLING is a capture by a
+    flung piece landing on its victim.
+    """
+
+    CAPTURE = auto()
+    CRUSH = auto()
+    FLING = auto()
+    POISON = auto()
+    RAMPAGE = auto()
+    EXPLOSION = auto()
+
+
 class GameStatus(Enum):
     """
     Outcome state of a game.
